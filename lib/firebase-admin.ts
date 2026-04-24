@@ -34,8 +34,8 @@ export async function sendSchedulePush(params: {
     data: {
       type: "schedule_update",
       enabled: String(params.enabled),
-      from: params.from,
-      to: params.to,
+      timeFrom: params.from,
+      timeTo: params.to,
       tz: params.tz,
     },
     android: {

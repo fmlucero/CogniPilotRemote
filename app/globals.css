@@ -1,28 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f1117;
-  --bg-card: #1a1d27;
-  --bg-card-border: #2a2d3e;
-  --accent: #6c63ff;
-  --accent-hover: #857dff;
-  --accent-dim: rgba(108, 99, 255, 0.15);
-  --success: #22c55e;
+  --bg: #0b0d14;
+  --bg-card: #151822;
+  --bg-card-border: #232736;
+  --accent: #5e54eb;
+  --accent-hover: #7b73ff;
+  --accent-dim: rgba(94, 84, 235, 0.12);
+  --success: #10b981;
   --warning: #f59e0b;
   --error: #ef4444;
-  --text: #e8eaf6;
-  --text-muted: #8890a4;
-  --radius: 12px;
-  --radius-sm: 8px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 html, body { height: 100%; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Outfit', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,7 +22,7 @@
 html, body { height: 100%; }
 
 body {
-  font-family: 'Outfit', system-ui, sans-serif;
+  font-family: 'Jost', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;

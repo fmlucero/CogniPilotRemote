@@ -18,6 +18,20 @@ export default async function AdminPage() {
 
   return (
     <main className="admin-root">
+      {/* Leaflet desde CDN — no agrega dependencias al package.json */}
+      <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossOrigin=""
+      />
+      <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossOrigin=""
+        async
+      />
+
       <header className="admin-header">
         <div className="admin-header-brand">
           <span>🚚</span>
@@ -152,6 +166,19 @@ export default async function AdminPage() {
 
           <ul id="event-feed" className="event-feed">
             <li className="event-empty">Esperando eventos del dispositivo…</li>
+          </ul>
+        </div>
+
+        <div className="admin-card map-card">
+          <div className="card-header map-header">
+            <h2>🗺️ Mapa de la flota — Mendoza</h2>
+            <span className="map-meta">datos simulados</span>
+          </div>
+          <div id="fleet-map" className="fleet-map" />
+          <ul className="map-legend">
+            <li><span className="legend-dot ok" /> En ruta</li>
+            <li><span className="legend-dot warn" /> Detenido</li>
+            <li><span className="legend-dot off" /> Fuera de servicio</li>
           </ul>
         </div>
       </div>
@@ -350,6 +377,63 @@ export default async function AdminPage() {
             setInterval(refreshBanner, 1000);
             poll();
             setInterval(poll, POLL_INTERVAL_MS);
+          })();
+
+          // ─── Mapa de Mendoza (Leaflet) ───────────────────────────────────
+          (function fleetMap() {
+            // Mock vehicles — reemplazar cuando conectemos la flota real
+            const vehicles = [
+              { id: 'MZA-01', label: 'Camión 01', lat: -32.8908, lng: -68.8272, status: 'ok',   note: 'Mendoza Capital · en ruta' },
+              { id: 'MZA-02', label: 'Camión 02', lat: -33.0900, lng: -68.4682, status: 'ok',   note: 'San Martín · en ruta' },
+              { id: 'MZA-03', label: 'Camión 03', lat: -33.5772, lng: -69.0184, status: 'warn', note: 'Tunuyán · detenido 12 min' },
+              { id: 'MZA-04', label: 'Camión 04', lat: -34.6177, lng: -68.3301, status: 'ok',   note: 'San Rafael · en ruta' },
+              { id: 'MZA-05', label: 'Camión 05', lat: -35.4716, lng: -69.5817, status: 'off',  note: 'Malargüe · fuera de servicio' },
+            ];
+
+            const STATUS_COLOR = { ok: '#10b981', warn: '#f59e0b', off: '#94a3b8' };
+
+            function init() {
+              if (typeof window === 'undefined') return;
+              if (!window.L) { setTimeout(init, 80); return; }
+              const container = document.getElementById('fleet-map');
+              if (!container || container.dataset.ready === '1') return;
+              container.dataset.ready = '1';
+
+              const map = window.L.map('fleet-map', {
+                center: [-34.0, -68.8],
+                zoom: 7,
+                scrollWheelZoom: false,
+                attributionControl: true,
+              });
+
+              // Tiles dark de Carto (free, sin API key)
+              window.L.tileLayer(
+                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                {
+                  maxZoom: 18,
+                  subdomains: 'abcd',
+                  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                }
+              ).addTo(map);
+
+              vehicles.forEach((v) => {
+                const color = STATUS_COLOR[v.status] || '#5e54eb';
+                const icon = window.L.divIcon({
+                  className: 'fleet-marker',
+                  html: '<span class="fleet-marker-pulse" style="background:' + color + '"></span>'
+                      + '<span class="fleet-marker-dot" style="background:' + color + '"></span>',
+                  iconSize: [22, 22],
+                  iconAnchor: [11, 11],
+                });
+                window.L.marker([v.lat, v.lng], { icon })
+                  .addTo(map)
+                  .bindPopup('<strong>' + v.id + '</strong> — ' + v.label + '<br><span style="color:#94a3b8">' + v.note + '</span>');
+              });
+
+              // Asegura tamaño correcto si la card abre con animación
+              setTimeout(() => map.invalidateSize(), 200);
+            }
+            init();
           })();
         `
       }} />

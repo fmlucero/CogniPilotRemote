@@ -11,6 +11,8 @@ const VALID_TYPES: EventType[] = [
   "scan_detected",
   "user_continued",
   "user_cancelled",
+  "global_app_opened",
+  "global_clicked",
 ];
 
 // ─── POST /api/events ────────────────────────────────────────────────────────
@@ -48,6 +50,13 @@ export async function POST(req: NextRequest) {
     screenName: typeof body.screenName === "string" ? body.screenName.slice(0, 120) : undefined,
     keywords: Array.isArray(body.keywords)
       ? body.keywords.filter((k): k is string => typeof k === "string").slice(0, 10)
+      : undefined,
+    appPackage: typeof body.appPackage === "string" ? body.appPackage.slice(0, 120) : undefined,
+    screenText: Array.isArray(body.screenText)
+      ? body.screenText
+          .filter((t): t is string => typeof t === "string")
+          .map((t) => t.slice(0, 80))
+          .slice(0, 8)
       : undefined,
   };
 

@@ -8,7 +8,10 @@ export type EventType =
   | "warning_shown"
   | "scan_detected"
   | "user_continued"
-  | "user_cancelled";
+  | "user_cancelled"
+  // Modo global (toggle en la app): eventos que NO son de SC Pack
+  | "global_app_opened"
+  | "global_clicked";
 
 export interface EventRecord {
   id: string;
@@ -18,6 +21,9 @@ export interface EventRecord {
   inSchedule?: boolean;
   screenName?: string;
   keywords?: string[];
+  // Solo en eventos global_*
+  appPackage?: string;
+  screenText?: string[];
 }
 
 export async function appendEvent(event: EventRecord): Promise<void> {

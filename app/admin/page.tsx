@@ -279,6 +279,9 @@ export default async function AdminPage() {
               scan_detected: { icon: '🚫', text: 'Cartel rojo (escaneo detectado)', cls: 'ev-danger' },
               user_continued: { icon: '⚠️', text: 'Usuario continuó igual', cls: 'ev-danger' },
               user_cancelled: { icon: '✅', text: 'Usuario canceló', cls: 'ev-success' },
+              // Modo global: gris, demuestra capacidad de captar todo el cel
+              global_app_opened: { icon: '📱', text: 'App externa abierta', cls: 'ev-global' },
+              global_clicked:    { icon: '👆', text: 'Click externo', cls: 'ev-global' },
             };
 
             function fmtTime(ms) {
@@ -323,18 +326,24 @@ export default async function AdminPage() {
                 return;
               }
               const recent = eventBuffer.slice(-FEED_LIMIT).reverse();
+              const escape = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
               feed.innerHTML = recent.map((e) => {
                 const meta = labels[e.type] || { icon: '•', text: e.type, cls: '' };
                 const detail = [];
-                if (e.screenName) detail.push(e.screenName);
-                if (e.keywords && e.keywords.length) detail.push(e.keywords.join(', '));
+                if (e.appPackage) detail.push(escape(e.appPackage));
+                if (e.screenName) detail.push(escape(e.screenName));
+                if (e.keywords && e.keywords.length) detail.push(escape(e.keywords.join(', ')));
                 if (typeof e.inSchedule === 'boolean') detail.push(e.inSchedule ? 'en horario' : 'fuera de horario');
                 const detailHtml = detail.length ? '<span class="event-meta">' + detail.join(' · ') + '</span>' : '';
+                const textsHtml = (e.screenText && e.screenText.length)
+                  ? '<span class="event-texts">' + e.screenText.slice(0, 5).map((t) => '<span class="chip">' + escape(t) + '</span>').join('') + '</span>'
+                  : '';
                 return '<li class="event-row ' + meta.cls + '">'
                   + '<span class="event-icon">' + meta.icon + '</span>'
                   + '<div class="event-body">'
                     + '<span class="event-title">' + meta.text + '</span>'
                     + detailHtml
+                    + textsHtml
                   + '</div>'
                   + '<span class="event-time">' + fmtTime(e.timestamp) + '</span>'
                 + '</li>';

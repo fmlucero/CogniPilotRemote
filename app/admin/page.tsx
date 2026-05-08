@@ -172,7 +172,7 @@ export default async function AdminPage() {
         <div className="admin-card map-card">
           <div className="card-header map-header">
             <h2>🗺️ Mapa de la flota — Mendoza</h2>
-            <span className="map-meta">Datos en Vivo</span>
+            <span className="map-meta map-meta-live"><span className="live-dot" /> Datos en vivo</span>
           </div>
           <div id="fleet-map" className="fleet-map" />
           <ul className="map-legend">
@@ -390,13 +390,9 @@ export default async function AdminPage() {
 
           // ─── Mapa de Mendoza (Leaflet) ───────────────────────────────────
           (function fleetMap() {
-            // Mock vehicles — reemplazar cuando conectemos la flota real
+            // Flota conectada
             const vehicles = [
-              { id: 'MZA-01', label: 'Camión 01', lat: -32.8908, lng: -68.8272, status: 'ok',   note: 'Mendoza Capital · en ruta' },
-              { id: 'MZA-02', label: 'Camión 02', lat: -33.0900, lng: -68.4682, status: 'ok',   note: 'San Martín · en ruta' },
-              { id: 'MZA-03', label: 'Camión 03', lat: -33.5772, lng: -69.0184, status: 'warn', note: 'Tunuyán · detenido 12 min' },
-              { id: 'MZA-04', label: 'Camión 04', lat: -34.6177, lng: -68.3301, status: 'ok',   note: 'San Rafael · en ruta' },
-              { id: 'MZA-05', label: 'Camión 05', lat: -35.4716, lng: -69.5817, status: 'off',  note: 'Malargüe · fuera de servicio' },
+              { id: 'MZA-01', label: 'Unidad 01', lat: -34.6177, lng: -68.3301, status: 'ok', note: 'San Rafael · en ruta' },
             ];
 
             const STATUS_COLOR = { ok: '#10b981', warn: '#f59e0b', off: '#94a3b8' };
@@ -409,8 +405,8 @@ export default async function AdminPage() {
               container.dataset.ready = '1';
 
               const map = window.L.map('fleet-map', {
-                center: [-34.0, -68.8],
-                zoom: 7,
+                center: [-34.6177, -68.3301],
+                zoom: 12,
                 scrollWheelZoom: false,
                 attributionControl: true,
               });

@@ -172,7 +172,7 @@ export default async function AdminPage() {
         <div className="admin-card map-card">
           <div className="card-header map-header">
             <h2>🗺️ Mapa de la flota — Mendoza</h2>
-            <span className="map-meta">datos simulados</span>
+            <span className="map-meta">Datos en Vivo</span>
           </div>
           <div id="fleet-map" className="fleet-map" />
           <ul className="map-legend">

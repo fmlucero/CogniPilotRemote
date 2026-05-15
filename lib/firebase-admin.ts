@@ -18,8 +18,12 @@ export function getFirebaseAdmin(): admin.app.App {
 }
 
 /**
- * Envía un data message FCM al topic "schedule-updates".
- * Todos los valores deben ser strings (limitación de FCM data messages).
+ * Envía un push FCM al topic "schedule-updates".
+ *
+ * Combina notification + data: la notification asegura entrega aunque la app
+ * esté en background o force-stopped (Android la muestra en la tray usando el
+ * canal "schedule_updates_channel"); el data llega a onMessageReceived cuando
+ * la app está activa para refrescar el snapshot local.
  */
 export async function sendSchedulePush(params: {
   enabled: boolean;
@@ -29,8 +33,14 @@ export async function sendSchedulePush(params: {
 }): Promise<string> {
   const messaging = getFirebaseAdmin().messaging();
 
+  const title = "📢 Horario actualizado por supervisor";
+  const body = params.enabled
+    ? `Nuevo rango permitido: ${params.from} – ${params.to}`
+    : "Restricción horaria desactivada";
+
   const messageId = await messaging.send({
     topic: "schedule-updates",
+    notification: { title, body },
     data: {
       type: "schedule_update",
       enabled: String(params.enabled),
@@ -40,6 +50,10 @@ export async function sendSchedulePush(params: {
     },
     android: {
       priority: "high",
+      notification: {
+        channelId: "schedule_updates_channel",
+        defaultSound: true,
+      },
     },
   });
 

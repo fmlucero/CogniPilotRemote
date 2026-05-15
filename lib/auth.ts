@@ -5,11 +5,14 @@ import { verifyAccess, AccessPayload, ACCESS_TTL, REFRESH_TTL } from "./jwt";
 export const ACCESS_COOKIE = "cp_at";
 export const REFRESH_COOKIE = "cp_rt";
 
-const isProd = process.env.NODE_ENV === "production";
+// Habilitar Secure solo cuando el deploy esté detrás de HTTPS.
+// El deploy actual es HTTP plano via ZeroTier, así que defaulteamos a false.
+// Setear COOKIE_SECURE=true en el .env si más adelante exponés con TLS.
+const cookieSecure = process.env.COOKIE_SECURE === "true";
 
 const ACCESS_COOKIE_OPTS = {
   httpOnly: true,
-  secure: isProd,
+  secure: cookieSecure,
   sameSite: "lax" as const,
   path: "/",
   maxAge: 60 * 15, // 15m
@@ -17,7 +20,7 @@ const ACCESS_COOKIE_OPTS = {
 
 const REFRESH_COOKIE_OPTS = {
   httpOnly: true,
-  secure: isProd,
+  secure: cookieSecure,
   sameSite: "lax" as const,
   path: "/",
   maxAge: 60 * 60 * 24 * 30, // 30d

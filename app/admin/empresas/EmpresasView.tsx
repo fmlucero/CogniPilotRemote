@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatCuitProgressive } from "@/lib/cuit";
 
 interface Empresa {
   id: string;
@@ -141,9 +142,10 @@ export default function EmpresasView({ initial }: { initial: Empresa[] }) {
                   type="text"
                   required
                   value={form.cuit}
-                  onChange={(e) => setForm({ ...form, cuit: e.target.value })}
+                  onChange={(e) => setForm({ ...form, cuit: formatCuitProgressive(e.target.value) })}
                   placeholder="30-71234567-8"
                   inputMode="numeric"
+                  maxLength={13}
                 />
               </div>
               <div className="field-group">

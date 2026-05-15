@@ -4,13 +4,26 @@
 //
 // Correr: npm run prisma:seed
 
-import { PrismaClient, Rol, TipoRegla, AccionRegla, TipoEvento } from "@prisma/client";
+import { PrismaClient, Rol, TipoRegla, AccionRegla } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+function requirePwEnv(name: string): string {
+  const v = process.env[name];
+  if (!v || v.length < 8) {
+    throw new Error(`Env var ${name} must be set with at least 8 chars before seeding`);
+  }
+  return v;
+}
+
 async function main() {
   console.log("🌱 Seeding CogniPilot...");
+
+  const ADMIN_PW = requirePwEnv("SEED_ADMIN_PASSWORD");
+  const SUPERVISOR_PW = requirePwEnv("SEED_SUPERVISOR_PASSWORD");
+  const GERENTE_PW = requirePwEnv("SEED_GERENTE_PASSWORD");
+  const REPARTIDOR_PW = requirePwEnv("SEED_REPARTIDOR_PASSWORD");
 
   // ── Empresa
   const empresa = await prisma.empresa.upsert({
@@ -35,7 +48,7 @@ async function main() {
     update: {},
     create: {
       email: "facu@cognipilot.local",
-      passwordHash: hash("admin123"),
+      passwordHash: hash(ADMIN_PW),
       nombre: "Facundo Lucero",
       rol: Rol.admin_sistema,
     },
@@ -47,7 +60,7 @@ async function main() {
     create: {
       empresaId: empresa.id,
       email: "supervisor@logisticacuyo.com.ar",
-      passwordHash: hash("super123"),
+      passwordHash: hash(SUPERVISOR_PW),
       nombre: "Ana Bermúdez",
       rol: Rol.supervisor,
     },
@@ -59,7 +72,7 @@ async function main() {
     create: {
       empresaId: empresa.id,
       email: "gerente@logisticacuyo.com.ar",
-      passwordHash: hash("gerente123"),
+      passwordHash: hash(GERENTE_PW),
       nombre: "Roberto Páez",
       rol: Rol.gerente,
     },
@@ -71,7 +84,7 @@ async function main() {
     create: {
       empresaId: empresa.id,
       email: "fm.lucero@alumno.um.edu.ar",
-      passwordHash: hash("repartidor123"),
+      passwordHash: hash(REPARTIDOR_PW),
       nombre: "Facu (repartidor)",
       rol: Rol.repartidor,
     },
@@ -245,10 +258,7 @@ async function main() {
 
   console.log(`✅ Seed completo:`);
   console.log(`   Empresa: ${empresa.nombre} (${empresa.id})`);
-  console.log(`   Admin:        facu@cognipilot.local             / admin123`);
-  console.log(`   Supervisor:   supervisor@logisticacuyo.com.ar   / super123`);
-  console.log(`   Gerente:      gerente@logisticacuyo.com.ar      / gerente123`);
-  console.log(`   Repartidor:   fm.lucero@alumno.um.edu.ar        / repartidor123`);
+  console.log(`   Usuarios creados con las passwords de las env vars SEED_*_PASSWORD`);
   console.log(`   Dispositivo seed UUID: dev-seed-facu-personal`);
 }
 

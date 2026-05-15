@@ -74,11 +74,7 @@ npm run prisma:seed
 
 ## Credenciales seed
 
-```
-Admin:       facu@cognipilot.local             / admin123
-Supervisor:  supervisor@logisticacuyo.com.ar   / super123
-Gerente:     gerente@logisticacuyo.com.ar      / gerente123
-Repartidor:  fm.lucero@alumno.um.edu.ar        / repartidor123
-```
-
-Cambiar antes de cualquier exposición externa.
+Las contraseñas de los usuarios seed se leen desde variables de entorno
+(`SEED_ADMIN_PASSWORD`, `SEED_SUPERVISOR_PASSWORD`, `SEED_GERENTE_PASSWORD`,
+`SEED_REPARTIDOR_PASSWORD`). Ver `.env.example` para los nombres de variables.
+Los emails de los usuarios seed están definidos en `prisma/seed.ts`.

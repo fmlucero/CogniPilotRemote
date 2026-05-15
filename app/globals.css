@@ -930,6 +930,91 @@ body { font-size: 16.5px; line-height: 1.45; }
 .legend-dot.warn { background: var(--warning); }
 .legend-dot.off  { background: var(--text-faint); }
 
+/* ── TABLAS ──────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.98rem;
+}
+.data-table thead th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.data-table tbody td {
+  padding: 0.85rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: var(--bg-elev-2); }
+.data-table .col-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+.data-table .muted { color: var(--text-faint); }
+.data-table .mono { font-family: 'SF Mono', Consolas, monospace; font-size: 0.92em; letter-spacing: 0; }
+
+/* Pills de estado */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid;
+}
+.pill.pill-on  { background: var(--success-dim); color: var(--success); border-color: rgba(110,210,138,0.4); }
+.pill.pill-off { background: var(--bg-elev-2);    color: var(--text-faint); border-color: var(--border); }
+
+.empty-state {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--text-faint);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+.empty-state strong { display: block; font-size: 1.1rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+
+/* Botones chicos para tabla */
+.btn-sm {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  border: 1px solid var(--border);
+  background: var(--bg-elev-2);
+  color: var(--text);
+}
+.btn-sm:hover { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+.btn-sm.btn-danger { color: var(--error); border-color: rgba(239,77,77,0.4); }
+.btn-sm.btn-danger:hover { background: var(--error-dim); border-color: var(--error); }
+
+/* Form layout horizontal en grids */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
+}
+.form-grid .field-full { grid-column: 1 / -1; }
+@media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+
 /* ── ANIMATIONS ──────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(16px); }

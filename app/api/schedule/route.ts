@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TipoRegla, AccionRegla } from "@prisma/client";
+import { TipoRegla, AccionRegla, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { sendSchedulePush } from "@/lib/firebase-admin";
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
           reglaId: r.id,
           usuarioId: auth.user.sub,
           campo: "(creación)",
-          valorOld: null,
+          valorOld: Prisma.JsonNull,
           valorNew: { activa: enabled, condicion },
         },
       });

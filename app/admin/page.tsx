@@ -419,7 +419,7 @@ export default async function AdminPage() {
               { id: 'MZA-01', label: 'Unidad 01', lat: -34.6177, lng: -68.3301, status: 'ok', note: 'San Rafael · en ruta' },
             ];
 
-            const STATUS_COLOR = { ok: '#10b981', warn: '#f59e0b', off: '#94a3b8' };
+            const STATUS_COLOR = { ok: '#6ed28a', warn: '#f5a524', off: '#5f5f63' };
 
             function init() {
               if (typeof window === 'undefined') return;
@@ -446,7 +446,7 @@ export default async function AdminPage() {
               ).addTo(map);
 
               vehicles.forEach((v) => {
-                const color = STATUS_COLOR[v.status] || '#5e54eb';
+                const color = STATUS_COLOR[v.status] || '#ffe14d';
                 const icon = window.L.divIcon({
                   className: 'fleet-marker',
                   html: '<span class="fleet-marker-pulse" style="background:' + color + '"></span>'
@@ -456,7 +456,7 @@ export default async function AdminPage() {
                 });
                 window.L.marker([v.lat, v.lng], { icon })
                   .addTo(map)
-                  .bindPopup('<strong>' + v.id + '</strong> — ' + v.label + '<br><span style="color:#94a3b8">' + v.note + '</span>');
+                  .bindPopup('<strong>' + v.id + '</strong> — ' + v.label + '<br><span style="color:#8c8c92">' + v.note + '</span>');
               });
 
               // Asegura tamaño correcto si la card abre con animación

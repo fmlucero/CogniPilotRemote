@@ -1,12 +1,36 @@
 import { redirect } from "next/navigation";
-import { getAuthUser } from "@/lib/session";
-import { getSchedule } from "@/lib/kv";
+import { TipoRegla } from "@prisma/client";
+import { getAuthUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminPage() {
   const user = await getAuthUser();
   if (!user) redirect("/login");
 
-  const schedule = await getSchedule();
+  // Leer la regla ventana_horaria global más reciente
+  const regla = await prisma.regla.findFirst({
+    where: { tipo: TipoRegla.ventana_horaria, ruta: null },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      historial: {
+        orderBy: { ts: "desc" },
+        take: 1,
+        include: { usuario: { select: { email: true, nombre: true } } },
+      },
+    },
+  });
+
+  const condicion = (regla?.condicion ?? null) as { desde?: string; hasta?: string; tz?: string } | null;
+  const schedule = regla
+    ? {
+        enabled: regla.activa,
+        from: condicion?.desde ?? "08:00",
+        to: condicion?.hasta ?? "18:00",
+        tz: condicion?.tz ?? "America/Argentina/Buenos_Aires",
+        updatedAt: regla.updatedAt.getTime(),
+        updatedBy: regla.historial?.[0]?.usuario?.nombre ?? regla.historial?.[0]?.usuario?.email ?? null,
+      }
+    : null;
 
   const lastUpdate = schedule?.updatedAt
     ? new Date(schedule.updatedAt).toLocaleString("es-AR", {
@@ -38,7 +62,7 @@ export default async function AdminPage() {
           <span>CogniPilot Admin</span>
         </div>
         <div className="admin-header-meta">
-          <span className="user-badge">👤 {user.username}</span>
+          <span className="user-badge">👤 {user.email} <small style={{opacity:.6}}>({user.rol})</small></span>
           <button id="logout-btn" className="btn-ghost">Salir</button>
         </div>
       </header>
@@ -194,7 +218,7 @@ export default async function AdminPage() {
 
           // Logout
           document.getElementById('logout-btn').addEventListener('click', async () => {
-            await fetch('/api/logout', { method: 'POST' });
+            await fetch('/api/auth/logout', { method: 'POST' });
             window.location.href = '/login';
           });
 

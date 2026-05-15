@@ -10,14 +10,14 @@ export default function LoginPage() {
 
         <form id="login-form" className="login-form">
           <div className="field-group">
-            <label htmlFor="username">Usuario</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="username"
-              name="username"
-              type="text"
+              id="email"
+              name="email"
+              type="email"
               autoComplete="username"
               required
-              placeholder="facu"
+              placeholder="facu@cognipilot.local"
             />
           </div>
           <div className="field-group">
@@ -40,8 +40,9 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <script dangerouslySetInnerHTML={{
-        __html: `
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
           document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('login-btn');
@@ -50,27 +51,35 @@ export default function LoginPage() {
             btn.textContent = 'Ingresando…';
             errEl.classList.add('hidden');
 
-            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
-            const res = await fetch('/api/login', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ username, password }),
-            });
+            try {
+              const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+              });
 
-            if (res.ok) {
-              window.location.href = '/admin';
-            } else {
-              const data = await res.json();
-              errEl.textContent = data.error ?? 'Credenciales incorrectas';
+              if (res.ok) {
+                window.location.href = '/admin';
+              } else {
+                const data = await res.json().catch(() => ({}));
+                errEl.textContent = data.error ?? 'Credenciales incorrectas';
+                errEl.classList.remove('hidden');
+                btn.disabled = false;
+                btn.textContent = 'Entrar';
+              }
+            } catch (err) {
+              errEl.textContent = 'Error de red: ' + err.message;
               errEl.classList.remove('hidden');
               btn.disabled = false;
               btn.textContent = 'Entrar';
             }
           });
-        `
-      }} />
+        `,
+        }}
+      />
     </main>
   );
 }

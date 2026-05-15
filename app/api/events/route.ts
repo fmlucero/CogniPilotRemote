@@ -1,94 +1,113 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { appendEvent, getEventsSince, getRecentEvents, EventRecord, EventType } from "@/lib/events";
+import { NextRequest, NextResponse } from "next/server";
+import { TipoEvento, Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-const VALID_TYPES: EventType[] = [
-  "app_opened",
-  "warning_shown",
-  "scan_detected",
-  "user_continued",
-  "user_cancelled",
-  "global_app_opened",
-  "global_clicked",
-];
+const VALID_TYPES = Object.values(TipoEvento);
 
-// ─── POST /api/events ────────────────────────────────────────────────────────
-// Público (acordado: uso personal). Recibe un evento de la app Android y
-// lo appendea al sorted set en Upstash Redis.
+interface EventBody {
+  type: TipoEvento;
+  deviceUuid?: string;
+  inSchedule?: boolean;
+  screenName?: string;
+  appPackage?: string;
+  keywords?: string[];
+  screenText?: string[];
+}
+
+// POST /api/events — ingesta desde la app Android.
+// Mantiene compatibilidad: si la app manda `deviceUuid`, lo resolvemos a `dispositivoId`
+// y derivamos `usuarioId` desde el dispositivo. Si no, queda como evento "anónimo".
 export async function POST(req: NextRequest) {
-  let body: Partial<EventRecord>;
+  let body: Partial<EventBody>;
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const type = body.type;
-  if (!type || !VALID_TYPES.includes(type)) {
+  if (!body.type || !VALID_TYPES.includes(body.type)) {
     return NextResponse.json(
-      { error: `\`type\` must be one of: ${VALID_TYPES.join(", ")}` },
-      { status: 422 }
+      { error: `type must be one of: ${VALID_TYPES.join(", ")}` },
+      { status: 422 },
     );
   }
 
-  const deviceId = typeof body.deviceId === "string" && body.deviceId.length > 0
-    ? body.deviceId.slice(0, 64)
-    : "unknown";
-
-  const timestamp = Date.now();
-  const id = `${timestamp}-${Math.random().toString(36).slice(2, 10)}`;
-
-  const event: EventRecord = {
-    id,
-    type,
-    timestamp,
-    deviceId,
-    inSchedule: typeof body.inSchedule === "boolean" ? body.inSchedule : undefined,
-    screenName: typeof body.screenName === "string" ? body.screenName.slice(0, 120) : undefined,
-    keywords: Array.isArray(body.keywords)
-      ? body.keywords.filter((k): k is string => typeof k === "string").slice(0, 10)
-      : undefined,
-    appPackage: typeof body.appPackage === "string" ? body.appPackage.slice(0, 120) : undefined,
-    screenText: Array.isArray(body.screenText)
-      ? body.screenText
-          .filter((t): t is string => typeof t === "string")
-          .map((t) => t.slice(0, 80))
-          .slice(0, 8)
-      : undefined,
-  };
-
-  try {
-    await appendEvent(event);
-  } catch (err) {
-    console.error("[POST /api/events] Redis error", err);
-    return NextResponse.json({ error: "Storage error" }, { status: 500 });
+  let dispositivoId: string | undefined;
+  let usuarioId: string | undefined;
+  if (body.deviceUuid) {
+    const dev = await prisma.dispositivo.findUnique({
+      where: { deviceUuid: body.deviceUuid },
+      select: { id: true, usuarioId: true },
+    });
+    if (dev) {
+      dispositivoId = dev.id;
+      usuarioId = dev.usuarioId;
+      // Touch lastSeen (sin actualizar lastLat/Lng — eso va por /api/positions)
+      await prisma.dispositivo.update({
+        where: { id: dev.id },
+        data: { lastSeen: new Date() },
+      });
+    }
   }
 
-  return NextResponse.json({ ok: true, event }, { status: 201 });
+  const evento = await prisma.eventoApp.create({
+    data: {
+      tipo: body.type,
+      usuarioId,
+      dispositivoId,
+      inSchedule: typeof body.inSchedule === "boolean" ? body.inSchedule : undefined,
+      screenName: body.screenName?.slice(0, 120),
+      appPackage: body.appPackage?.slice(0, 120),
+      keywords: Array.isArray(body.keywords)
+        ? body.keywords.filter((k): k is string => typeof k === "string").slice(0, 10)
+        : [],
+      screenText: Array.isArray(body.screenText)
+        ? body.screenText
+            .filter((t): t is string => typeof t === "string")
+            .map((t) => t.slice(0, 80))
+            .slice(0, 8)
+        : [],
+    },
+  });
+
+  return NextResponse.json({ ok: true, event: evento }, { status: 201 });
 }
 
-// ─── GET /api/events ─────────────────────────────────────────────────────────
-// Devuelve eventos. Sin auth (página /admin la tiene).
-//   ?since=<ms>  → eventos con timestamp > since
-//   sin since   → últimos 50 eventos
+// GET /api/events?since=<ms>  → eventos con ts > since
+// GET /api/events             → últimos 50
 export async function GET(req: NextRequest) {
   const sinceParam = req.nextUrl.searchParams.get("since");
-  try {
-    if (sinceParam) {
-      const since = Number(sinceParam);
-      if (!Number.isFinite(since)) {
-        return NextResponse.json({ error: "`since` must be a number" }, { status: 422 });
-      }
-      const events = await getEventsSince(since);
-      return NextResponse.json({ events, serverTime: Date.now() });
+
+  const where: Prisma.EventoAppWhereInput = {};
+  if (sinceParam) {
+    const since = Number(sinceParam);
+    if (!Number.isFinite(since)) {
+      return NextResponse.json({ error: "since must be a number" }, { status: 422 });
     }
-    const events = await getRecentEvents(50);
-    return NextResponse.json({ events, serverTime: Date.now() });
-  } catch (err) {
-    console.error("[GET /api/events]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    where.ts = { gt: new Date(since) };
   }
+
+  const eventos = await prisma.eventoApp.findMany({
+    where,
+    orderBy: { ts: "asc" },
+    take: 200,
+  });
+
+  // Formato compatible con el admin actual: timestamp en ms.
+  const events = eventos.map((e) => ({
+    id: e.id,
+    type: e.tipo,
+    timestamp: e.ts.getTime(),
+    deviceId: e.dispositivoId ?? "unknown",
+    inSchedule: e.inSchedule ?? undefined,
+    screenName: e.screenName ?? undefined,
+    appPackage: e.appPackage ?? undefined,
+    keywords: e.keywords,
+    screenText: e.screenText,
+  }));
+
+  return NextResponse.json({ events, serverTime: Date.now() });
 }

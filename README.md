@@ -1,38 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CogniPilot — Backend & Admin
 
-## Getting Started
+Next.js 16 + Postgres 16 + Prisma + JWT. Corre en docker-compose dentro de la VM
+`Docker-Cognipilot` (UM-Cloud) y se accede vía ZeroTier en `http://10.201.0.67:3000`.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16.2.4 / React 19** — App Router, route handlers, server components.
+- **Postgres 16-alpine** — gestor en docker-compose, datos en volumen `pgdata`.
+- **Prisma 6** — ORM y migraciones.
+- **JWT** — access (15 min) + refresh (30 días). Web usa cookies httpOnly, Android usa Bearer.
+- **bcryptjs** — hash de passwords.
+- **firebase-admin** — push FCM al topic `schedule-updates`.
+- **pgAdmin** — opcional para inspección (puerto 5050).
+
+## Variables de entorno
+
+Ver `.env.example`. Generar secretos con:
+
+```
+openssl rand -hex 32
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Desarrollo local (Windows + ZeroTier)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Apunta a la Postgres remota:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```powershell
+cp .env.example .env
+# Editar DATABASE_URL apuntando a 10.201.0.67:5432 con la password real
+npm install
+npx prisma generate
+npm run dev
+```
 
-## Learn More
+## Despliegue en la VM
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+ssh -i F:\Proys\cognipilot-um.pem ubuntu@10.201.0.67
+# (transferir repo con scp/rsync si todavía no está)
+cd ~/cognipilot
+cp .env.example .env
+# editar .env con secretos reales
+docker compose up -d --build
+# logs
+docker compose logs -f app
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Migraciones y seed
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Crear primera migration (desde el host con DB accesible)
+npx prisma migrate dev --name init
 
-## Deploy on Vercel
+# En la VM, las migrations se aplican solas al arrancar el container (migrate deploy)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Cargar datos iniciales
+npm run prisma:seed
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Endpoints
 
+| Método | Path | Auth | Descripción |
+|---|---|---|---|
+| POST | `/api/auth/login` | — | Login. Web: setea cookies. Android: devuelve tokens y registra dispositivo. |
+| POST | `/api/auth/logout` | — | Limpia cookies. |
+| POST | `/api/auth/refresh` | refresh | Renueva access token. |
+| GET  | `/api/auth/me` | access | Usuario actual. |
+| POST | `/api/devices/register` | access | Upsert de dispositivo. |
+| POST | `/api/events` | público (legacy) | Ingesta de eventos de la app. |
+| GET  | `/api/events?since=ms` | público | Feed del admin. |
+| GET  | `/api/schedule` | público | Ventana horaria activa (compat con app). |
+| POST | `/api/schedule` | supervisor/admin | Crea/actualiza ventana horaria + push FCM. |
 
+## Credenciales seed
+
+```
+Admin:       facu@cognipilot.local             / admin123
+Supervisor:  supervisor@logisticacuyo.com.ar   / super123
+Gerente:     gerente@logisticacuyo.com.ar      / gerente123
+Repartidor:  fm.lucero@alumno.um.edu.ar        / repartidor123
+```
+
+Cambiar antes de cualquier exposición externa.

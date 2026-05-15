@@ -27,11 +27,11 @@ async function main() {
 
   // ── Empresa
   const empresa = await prisma.empresa.upsert({
-    where: { cuit: "30-71234567-8" },
+    where: { cuit: "30-71234567-1" },
     update: {},
     create: {
       nombre: "Logística Cuyo SA",
-      cuit: "30-71234567-8",
+      cuit: "30-71234567-1",
       contacto: {
         email: "contacto@logisticacuyo.com.ar",
         telefono: "+54 261 555 0100",

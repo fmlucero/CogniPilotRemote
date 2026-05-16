@@ -1,6 +1,16 @@
-import { prisma } from "@/lib/prisma";
+import { serverFetch } from "@/lib/api";
 import { getAuthUser } from "@/lib/auth";
 import EmpresasView from "./EmpresasView";
+
+interface EmpresaFromBack {
+  id: string;
+  nombre: string;
+  cuit: string;
+  contacto: { email?: string; telefono?: string; direccion?: string } | null;
+  activa: boolean;
+  createdAt: string;  // ISO datetime serializado por FastAPI
+  _count: { usuarios: number; rutas: number; reglas: number };
+}
 
 export const dynamic = "force-dynamic";
 
@@ -25,19 +35,15 @@ export default async function EmpresasPage() {
     );
   }
 
-  const empresas = await prisma.empresa.findMany({
-    orderBy: [{ activa: "desc" }, { nombre: "asc" }],
-    include: { _count: { select: { usuarios: true, rutas: true, reglas: true } } },
-  });
+  const data = await serverFetch<{ empresas: EmpresaFromBack[] }>("/api/empresas");
 
-  // Serializar para client component (Date → number, JSON intacto)
-  const initial = empresas.map((e) => ({
+  const initial = data.empresas.map((e) => ({
     id: e.id,
     nombre: e.nombre,
     cuit: e.cuit,
-    contacto: e.contacto as { email?: string; telefono?: string; direccion?: string } | null,
+    contacto: e.contacto,
     activa: e.activa,
-    createdAt: e.createdAt.getTime(),
+    createdAt: new Date(e.createdAt).getTime(),
     counts: e._count,
   }));
 

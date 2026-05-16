@@ -1,4 +1,7 @@
-# CogniPilot Next.js app — multi-stage build
+# CogniPilot Front Next.js — multi-stage build
+# Post-cutover: el front ya NO toca la DB ni corre migraciones.
+# Schema lo gestiona Alembic desde cognipilot-back.
+
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -8,7 +11,6 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate
 RUN npm run build
 
 FROM node:22-alpine AS runner
@@ -18,7 +20,5 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/prisma ./prisma
 EXPOSE 3000
-# Apply migrations at startup, then start the server
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start"]
+CMD ["npm", "run", "start"]

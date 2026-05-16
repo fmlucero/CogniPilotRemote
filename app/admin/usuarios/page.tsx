@@ -1,6 +1,23 @@
-import { prisma } from "@/lib/prisma";
+import { serverFetch } from "@/lib/api";
 import { getAuthUser } from "@/lib/auth";
 import UsuariosView from "./UsuariosView";
+
+interface UsuarioFromBack {
+  id: string;
+  email: string;
+  nombre: string;
+  rol: "admin_sistema" | "supervisor" | "gerente" | "repartidor";
+  empresaId: string | null;
+  empresaNombre: string | null;
+  activo: boolean;
+  dispositivos: number;
+  createdAt: number;  // ms epoch (FastAPI ya lo devuelve así)
+}
+
+interface EmpresaShort {
+  id: string;
+  nombre: string;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -24,33 +41,28 @@ export default async function UsuariosPage() {
     );
   }
 
-  const usuariosQuery = await prisma.usuario.findMany({
-    where: user.rol === "supervisor" && user.empresaId ? { empresaId: user.empresaId } : {},
-    orderBy: [{ activo: "desc" }, { rol: "asc" }, { nombre: "asc" }],
-    include: {
-      empresa: { select: { id: true, nombre: true } },
-      _count: { select: { dispositivos: true } },
-    },
-  });
+  // El back filtra por rol del que llama: supervisor ve solo su empresa, admin ve todos.
+  const usuariosData = await serverFetch<{ usuarios: UsuarioFromBack[] }>("/api/usuarios");
 
-  // Para el dropdown de empresas en el form
-  const empresas = await prisma.empresa.findMany({
-    where: { activa: true },
-    orderBy: { nombre: "asc" },
-    select: { id: true, nombre: true },
-  });
+  // Empresas para el dropdown — admin ve todas, supervisor solo necesita la propia
+  // pero por consistencia siempre traemos la lista; el endpoint la filtra por rol.
+  let empresas: EmpresaShort[] = [];
+  if (user.rol === "admin_sistema") {
+    const e = await serverFetch<{ empresas: Array<EmpresaShort & { activa: boolean }> }>(
+      "/api/empresas",
+    );
+    empresas = e.empresas.filter((x) => x.activa).map(({ id, nombre }) => ({ id, nombre }));
+  } else if (user.empresaId) {
+    empresas = [{ id: user.empresaId, nombre: "" }];
+  }
 
-  const initial = usuariosQuery.map((u) => ({
-    id: u.id,
-    email: u.email,
-    nombre: u.nombre,
-    rol: u.rol,
-    empresaId: u.empresaId,
-    empresaNombre: u.empresa?.nombre ?? null,
-    activo: u.activo,
-    dispositivos: u._count.dispositivos,
-    createdAt: u.createdAt.getTime(),
-  }));
-
-  return <UsuariosView initial={initial} empresas={empresas} viewerRol={user.rol} viewerId={user.sub} viewerEmpresaId={user.empresaId} />;
+  return (
+    <UsuariosView
+      initial={usuariosData.usuarios}
+      empresas={empresas}
+      viewerRol={user.rol}
+      viewerId={user.sub}
+      viewerEmpresaId={user.empresaId}
+    />
+  );
 }

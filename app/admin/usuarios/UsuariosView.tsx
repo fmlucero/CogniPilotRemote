@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Rol } from "@prisma/client";
+
+type Rol = "admin_sistema" | "supervisor" | "gerente" | "repartidor";
 
 interface Usuario {
   id: string;

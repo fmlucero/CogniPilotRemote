@@ -1,19 +1,14 @@
-import jwt from "jsonwebtoken";
-import type { Rol } from "@prisma/client";
+// JWT verify-only — el front ya NO firma tokens (lo hace FastAPI).
+// Solo valida la cookie httpOnly cp_at para que Server Components sepan quién
+// está logueado sin pegar al back en cada request.
 
-export const ACCESS_TTL = "15m";
-export const REFRESH_TTL = "30d";
+import jwt from "jsonwebtoken";
 
 export interface AccessPayload {
-  sub: string;          // usuarioId
-  email: string;
-  rol: Rol;
-  empresaId: string | null;
-}
-
-export interface RefreshPayload {
   sub: string;
-  type: "refresh";
+  email: string;
+  rol: "admin_sistema" | "supervisor" | "gerente" | "repartidor";
+  empresaId: string | null;
 }
 
 function getAccessSecret(): string {
@@ -22,34 +17,9 @@ function getAccessSecret(): string {
   return s;
 }
 
-function getRefreshSecret(): string {
-  const s = process.env.JWT_REFRESH_SECRET;
-  if (!s) throw new Error("JWT_REFRESH_SECRET must be set");
-  return s;
-}
-
-export function signAccess(payload: AccessPayload): string {
-  return jwt.sign(payload, getAccessSecret(), { expiresIn: ACCESS_TTL });
-}
-
-export function signRefresh(userId: string): string {
-  const payload: RefreshPayload = { sub: userId, type: "refresh" };
-  return jwt.sign(payload, getRefreshSecret(), { expiresIn: REFRESH_TTL });
-}
-
 export function verifyAccess(token: string): AccessPayload | null {
   try {
     return jwt.verify(token, getAccessSecret()) as AccessPayload;
-  } catch {
-    return null;
-  }
-}
-
-export function verifyRefresh(token: string): RefreshPayload | null {
-  try {
-    const decoded = jwt.verify(token, getRefreshSecret()) as RefreshPayload;
-    if (decoded.type !== "refresh") return null;
-    return decoded;
   } catch {
     return null;
   }

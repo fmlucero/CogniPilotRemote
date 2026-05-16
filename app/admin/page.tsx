@@ -1,32 +1,26 @@
-import { TipoRegla } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
+import { serverFetch } from "@/lib/api";
+
+interface ScheduleFromBack {
+  enabled: boolean;
+  from: string | null;
+  to: string | null;
+  tz: string | null;
+  updatedAt: number | null;
+  updatedBy: string | null;
+}
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   // Auth ya validada en layout
 
-  const regla = await prisma.regla.findFirst({
-    where: { tipo: TipoRegla.ventana_horaria, ruta: null },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      historial: {
-        orderBy: { ts: "desc" },
-        take: 1,
-        include: { usuario: { select: { email: true, nombre: true } } },
-      },
-    },
-  });
-
-  const condicion = (regla?.condicion ?? null) as { desde?: string; hasta?: string; tz?: string } | null;
-  const schedule = regla
-    ? {
-        enabled: regla.activa,
-        from: condicion?.desde ?? "08:00",
-        to: condicion?.hasta ?? "18:00",
-        tz: condicion?.tz ?? "America/Argentina/Buenos_Aires",
-        updatedAt: regla.updatedAt.getTime(),
-        updatedBy: regla.historial?.[0]?.usuario?.nombre ?? regla.historial?.[0]?.usuario?.email ?? null,
-      }
-    : null;
+  let schedule: ScheduleFromBack | null = null;
+  try {
+    schedule = await serverFetch<ScheduleFromBack>("/api/schedule");
+  } catch {
+    // Si el back está caído, mostramos defaults — el cliente repolla igual.
+    schedule = null;
+  }
 
   const lastUpdate = schedule?.updatedAt
     ? new Date(schedule.updatedAt).toLocaleString("es-AR", {

@@ -134,8 +134,7 @@ export default async function DashboardPage() {
               </div>
 
               <div className="action-row">
-                <button id="save-btn" type="submit" className="btn-primary">💾 Guardar y notificar</button>
-                <button id="test-btn" type="button" className="btn-secondary">📲 Probar push</button>
+                <button id="save-btn" type="submit" className="btn-primary">💾 Guardar</button>
               </div>
             </form>
           </div>
@@ -143,9 +142,9 @@ export default async function DashboardPage() {
           <div className="admin-card info-card">
             <h3>📡 Estado del sistema</h3>
             <ul className="status-list">
-              <li><span className="dot green" /> App Android suscripta al topic <code>schedule-updates</code></li>
-              <li><span className="dot green" /> Firebase Cloud Messaging activo</li>
-              <li><span className="dot green" /> Backend Vercel operativo</li>
+              <li><span className="dot green" /> App Android sincroniza por <strong>SSE</strong> en foreground (latencia &lt;100ms)</li>
+              <li><span className="dot green" /> Polling 30s en foreground + WorkManager 15 min en background como fallback</li>
+              <li><span className="dot green" /> Backend FastAPI (cognipilot-back) operativo en VM UM-Cloud</li>
             </ul>
           </div>
         </div>
@@ -188,12 +187,10 @@ export default async function DashboardPage() {
             timeFields.style.display = toggle.checked ? 'grid' : 'none';
           });
 
-          async function postSchedule(feedbackMsg) {
+          async function postSchedule() {
             const btn = document.getElementById('save-btn');
-            const testBtn = document.getElementById('test-btn');
             const feedback = document.getElementById('save-feedback');
             btn.disabled = true;
-            testBtn.disabled = true;
             feedback.className = 'feedback hidden';
 
             const payload = {
@@ -209,33 +206,29 @@ export default async function DashboardPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
               });
-              const data = await res.json();
 
               if (res.status === 401) { window.location.href = '/login'; return; }
 
-              if (data.fcmError) {
-                feedback.textContent = '⚠️ Guardado en KV pero el push falló: ' + data.fcmError;
-                feedback.className = 'feedback warning';
-              } else {
-                feedback.textContent = '✅ ' + (feedbackMsg || 'Horario guardado y push enviado correctamente');
+              if (res.ok) {
+                feedback.textContent = '✅ Horario guardado. La app del repartidor se sincroniza por SSE (instantáneo en foreground) o polling (≤30s/15min).';
                 feedback.className = 'feedback success';
+              } else {
+                const data = await res.json().catch(() => ({}));
+                feedback.textContent = '⚠️ Error al guardar: ' + (data.error || ('HTTP ' + res.status));
+                feedback.className = 'feedback warning';
               }
             } catch (err) {
               feedback.textContent = '❌ Error de red: ' + err.message;
               feedback.className = 'feedback error';
             } finally {
               btn.disabled = false;
-              testBtn.disabled = false;
               setTimeout(() => { feedback.className = 'feedback hidden'; }, 6000);
             }
           }
 
           document.getElementById('schedule-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            await postSchedule('Horario guardado y push enviado correctamente');
-          });
-          document.getElementById('test-btn').addEventListener('click', async () => {
-            await postSchedule('Push de prueba enviado al dispositivo');
+            await postSchedule();
           });
 
           // ─── Live activity feed ──────────────────────────────────

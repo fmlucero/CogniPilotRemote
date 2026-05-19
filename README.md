@@ -1,80 +1,86 @@
-# CogniPilot — Backend & Admin
+# CogniPilot Front (Next.js admin UI)
 
-Next.js 16 + Postgres 16 + Prisma + JWT. Corre en docker-compose dentro de la VM
-`Docker-Cognipilot` (UM-Cloud) y se accede vía ZeroTier en `http://10.201.0.67:3000`.
+Next.js 16 + React 19. **SOLO UI** — el back API vive en
+[cognipilot-back](https://github.com/fmlucero/CogniPilotBack) (FastAPI).
+
+Corre en docker-compose dentro de la VM `Docker-Cognipilot` (UM-Cloud) y se
+accede vía:
+- ZeroTier interno: `http://10.201.0.67:3000`
+- Internet (via nginx + Cloudflare Tunnel del compose de back)
+
+## Arquitectura post-cutover
+
+```
+   Browser (admin)
+        │ HTTPS
+        ▼
+   Cloudflare Tunnel
+        │
+        ▼
+   nginx :80 (cognipilot-back)
+   ├── /api/*  → FastAPI :8000 (cognipilot-back-api)
+   └── /       → este front :3000 (cognipilot-app)
+                  └── Server Components hacen fetch a BACK_API_URL
+                      via lib/api.ts (serverFetch + cookie forwarding)
+```
 
 ## Stack
 
-- **Next.js 16.2.4 / React 19** — App Router, route handlers, server components.
-- **Postgres 16-alpine** — gestor en docker-compose, datos en volumen `pgdata`.
-- **Prisma 6** — ORM y migraciones.
-- **JWT** — access (15 min) + refresh (30 días). Web usa cookies httpOnly, Android usa Bearer.
-- **bcryptjs** — hash de passwords.
-- **firebase-admin** — push FCM al topic `schedule-updates`.
-- **pgAdmin** — opcional para inspección (puerto 5050).
+- **Next.js 16.2.4 / React 19** — App Router con Server Components
+- **jsonwebtoken** — verify-only de la cookie `cp_at` (firmada por FastAPI)
+- **Postgres 16-alpine** + **pgAdmin** — todavía en este compose, compartido con el back
+
+Lo que **NO está** acá (vive en cognipilot-back):
+- ~~Prisma~~ (Alembic owns el schema desde HU-18)
+- ~~app/api/*~~ (route handlers borrados, nginx rutea a FastAPI)
+- ~~firebase-admin~~ (sin FCM, polling + SSE propio — ver HU-18)
+- ~~lib/{prisma,firebase-admin,password}.ts~~ (borrados)
+- ~~Seed~~ (movido a `cognipilot-back/scripts/seed.py`)
 
 ## Variables de entorno
 
-Ver `.env.example`. Generar secretos con:
+Ver `.env.example`. Las dos críticas:
 
-```
-openssl rand -hex 32
-```
+- `JWT_SECRET`: **mismo** que cognipilot-back para que la cookie validate cross-stack
+- `BACK_API_URL`: `http://host.docker.internal:8001` (parallel mode en la VM)
 
 ## Desarrollo local (Windows + ZeroTier)
 
-Apunta a la Postgres remota:
-
 ```powershell
 cp .env.example .env
-# Editar DATABASE_URL apuntando a 10.201.0.67:5432 con la password real
+# Editar .env con JWT_SECRET y BACK_API_URL=http://10.201.0.67:8001
 npm install
-npx prisma generate
 npm run dev
 ```
+
+OpenAPI / docs del back: http://10.201.0.67:8001/docs
 
 ## Despliegue en la VM
 
 ```bash
 ssh -i F:\Proys\cognipilot-um.pem ubuntu@10.201.0.67
-# (transferir repo con scp/rsync si todavía no está)
 cd ~/cognipilot
-cp .env.example .env
-# editar .env con secretos reales
-docker compose up -d --build
-# logs
-docker compose logs -f app
+git pull
+docker compose up -d --build app
 ```
 
-## Migraciones y seed
+El nginx del compose de back ya rutea `/` a este container `cognipilot-app:3000`.
 
-```bash
-# Crear primera migration (desde el host con DB accesible)
-npx prisma migrate dev --name init
+## Páginas
 
-# En la VM, las migrations se aplican solas al arrancar el container (migrate deploy)
-
-# Cargar datos iniciales
-npm run prisma:seed
-```
-
-## Endpoints
-
-| Método | Path | Auth | Descripción |
+| Path | Tipo | Auth | Descripción |
 |---|---|---|---|
-| POST | `/api/auth/login` | — | Login. Web: setea cookies. Android: devuelve tokens y registra dispositivo. |
-| POST | `/api/auth/logout` | — | Limpia cookies. |
-| POST | `/api/auth/refresh` | refresh | Renueva access token. |
-| GET  | `/api/auth/me` | access | Usuario actual. |
-| POST | `/api/devices/register` | access | Upsert de dispositivo. |
-| POST | `/api/events` | público (legacy) | Ingesta de eventos de la app. |
-| GET  | `/api/events?since=ms` | público | Feed del admin. |
-| GET  | `/api/schedule` | público | Ventana horaria activa (compat con app). |
-| POST | `/api/schedule` | supervisor/admin | Crea/actualiza ventana horaria + push FCM. |
+| `/` | Server | público | Redirect a /login o /admin según cookie |
+| `/login` | Client | público | Form de login |
+| `/admin` | Server | requiere cookie | Dashboard con schedule + feed eventos + mapa |
+| `/admin/empresas` | Server | admin_sistema | CRUD empresas (fetch a /api/empresas) |
+| `/admin/usuarios` | Server | admin_sistema/supervisor | CRUD usuarios |
+| `/admin/reglas` | Server | TBD | Stub — pendiente |
+| `/admin/reportes` | Server | TBD | Stub — pendiente |
 
-## Credenciales seed
+## Helpers
 
-Las contraseñas de los usuarios seed se leen desde variables de entorno
-(`SEED_ADMIN_PASSWORD`, `SEED_SUPERVISOR_PASSWORD`, `SEED_GERENTE_PASSWORD`,
-`SEED_REPARTIDOR_PASSWORD`). Ver `.env.example` para los nombres de variables.
-Los emails de los usuarios seed están definidos en `prisma/seed.ts`.
+- `lib/auth.ts` — `getAuthUser()`: lee cookie `cp_at`, verifica JWT con `JWT_SECRET`
+- `lib/jwt.ts` — `verifyAccess()`: solo verify, no sign (el back firma)
+- `lib/api.ts` — `serverFetch(path)`: HTTP a `BACK_API_URL`, forwarda cookies
+- `lib/cuit.ts` — utilidades client-side de formato/validación CUIT

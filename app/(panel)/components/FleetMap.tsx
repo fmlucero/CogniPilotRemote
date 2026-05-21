@@ -61,6 +61,7 @@ export default function FleetMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
   const markersRef = useRef<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const didInitialFitRef = useRef(false); // fitBounds una sola vez al primer load
   const [mapReady, setMapReady] = useState(false);
   const [fleet, setFleet] = useState<FleetPosition[]>([]);
   const [fleetError, setFleetError] = useState(false);
@@ -172,9 +173,12 @@ export default function FleetMap({
       markersRef.current.push(marker);
     });
 
-    if (fleet.length > 0) {
+    // fitBounds SOLO la primera vez que llegan posiciones — después respetamos
+    // el zoom/pan del usuario. Si quiere re-centrar, recargo la página.
+    if (fleet.length > 0 && !didInitialFitRef.current) {
       const bounds = L.latLngBounds(fleet.map((p) => [p.lat, p.lng]));
       map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+      didInitialFitRef.current = true;
     }
   }, [fleet, mapReady]);
 

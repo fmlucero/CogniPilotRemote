@@ -49,6 +49,33 @@ interface FeedEvent {
   empresaNombre?: string | null;
 }
 
+// HU-11 — última posición conocida de un repartidor en el mapa de flota
+interface FleetPosition {
+  usuarioId: string;
+  usuarioNombre: string;
+  usuarioEmail: string;
+  empresaId: string | null;
+  empresaNombre: string | null;
+  dispositivoId: string;
+  deviceUuid: string;
+  lat: number;
+  lng: number;
+  lastSeen: number;
+  connectionState: "online" | "active_today" | "offline";
+}
+
+const FLEET_POLL_MS = 10_000;
+const FLEET_STATE_COLOR: Record<FleetPosition["connectionState"], string> = {
+  online: "#6ed28a",       // verde
+  active_today: "#f5a524", // ámbar
+  offline: "#5f5f63",      // gris
+};
+const FLEET_STATE_LABEL: Record<FleetPosition["connectionState"], string> = {
+  online: "en línea",
+  active_today: "activo hoy",
+  offline: "desconectado",
+};
+
 const SCAN_ALERT_WINDOW_MS = 30_000;
 const FEED_LIMIT = 30;
 const POLL_INTERVAL_MS = 1500;
@@ -105,6 +132,13 @@ export default function DashboardClient({
   const alertTitleRef = useRef<HTMLElement>(null);
   const alertSubtitleRef = useRef<HTMLElement>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+
+  // HU-11 — flota: estado y refs para el mapa Leaflet
+  const [fleet, setFleet] = useState<FleetPosition[]>([]);
+  const [fleetError, setFleetError] = useState(false);
+  const mapRef = useRef<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const markersRef = useRef<any[]>([]); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const [mapReady, setMapReady] = useState(false);
 
   // ─── Submit schedule ─────────────────────────────────────────────────
   async function handleSubmit(e: React.FormEvent) {
@@ -239,17 +273,33 @@ export default function DashboardClient({
     };
   }, []);
 
-  // ─── Leaflet map ─────────────────────────────────────────────────────
+  // ─── HU-11 — Polling de posiciones de la flota ───────────────────────
+  useEffect(() => {
+    let alive = true;
+    async function poll() {
+      try {
+        const res = await fetch("/api/realtime/positions", { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data: { positions: FleetPosition[]; serverTime: number } = await res.json();
+        if (alive) {
+          setFleet(data.positions);
+          setFleetError(false);
+        }
+      } catch (err) {
+        if (alive) setFleetError(true);
+        console.warn("fleet poll error", err);
+      }
+    }
+    poll();
+    const id = window.setInterval(poll, FLEET_POLL_MS);
+    return () => { alive = false; window.clearInterval(id); };
+  }, []);
+
+  // ─── Leaflet map — init único ────────────────────────────────────────
   useEffect(() => {
     const container = mapContainerRef.current;
     if (!container) return;
     if (container.dataset.ready === "1") return;
-
-    const STATUS_COLOR: Record<string, string> = { ok: "#6ed28a", warn: "#f5a524", off: "#5f5f63" };
-    const vehicles = [
-      { id: "MZA-01", label: "Unidad 01", lat: -34.6177, lng: -68.3301, status: "ok", note: "San Rafael · en ruta" },
-    ];
-    let mapInstance: { invalidateSize: () => void; remove: () => void } | null = null;
 
     function ensureLeaflet(): Promise<void> {
       return new Promise((resolve) => {
@@ -285,28 +335,58 @@ export default function DashboardClient({
         maxZoom: 18, subdomains: "abcd",
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
       }).addTo(map);
-      vehicles.forEach((v) => {
-        const color = STATUS_COLOR[v.status] || "#ffe14d";
-        const icon = L.divIcon({
-          className: "fleet-marker",
-          html: '<span class="fleet-marker-pulse" style="background:' + color + '"></span>'
-              + '<span class="fleet-marker-dot" style="background:' + color + '"></span>',
-          iconSize: [22, 22], iconAnchor: [11, 11],
-        });
-        L.marker([v.lat, v.lng], { icon }).addTo(map)
-          .bindPopup('<strong>' + v.id + '</strong> — ' + v.label + '<br><span style="color:#8c8c92">' + v.note + "</span>");
-      });
       setTimeout(() => map.invalidateSize(), 200);
-      mapInstance = map;
+      mapRef.current = map;
+      setMapReady(true);
     });
 
     return () => {
-      if (mapInstance) {
-        mapInstance.remove();
+      const map = mapRef.current;
+      if (map) {
+        markersRef.current.forEach((m) => map.removeLayer(m));
+        markersRef.current = [];
+        map.remove();
         if (container) container.dataset.ready = "";
+        mapRef.current = null;
+        setMapReady(false);
       }
     };
   }, []);
+
+  // ─── HU-11 — Sync de markers con el estado de fleet ──────────────────
+  useEffect(() => {
+    if (!mapReady) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const L = (window as typeof window & { L: any }).L; // eslint-disable-line @typescript-eslint/no-explicit-any
+    if (!L) return;
+
+    // Limpiar markers anteriores
+    markersRef.current.forEach((m) => map.removeLayer(m));
+    markersRef.current = [];
+
+    fleet.forEach((p) => {
+      const color = FLEET_STATE_COLOR[p.connectionState];
+      const icon = L.divIcon({
+        className: "fleet-marker",
+        html: '<span class="fleet-marker-pulse" style="background:' + color + '"></span>'
+            + '<span class="fleet-marker-dot" style="background:' + color + '"></span>',
+        iconSize: [22, 22], iconAnchor: [11, 11],
+      });
+      const popupHtml =
+        '<strong>' + escapeHtml(p.usuarioNombre) + '</strong>'
+        + (p.empresaNombre ? ' — <span style="color:#8c8c92">' + escapeHtml(p.empresaNombre) + '</span>' : '')
+        + '<br><span style="color:#8c8c92">' + FLEET_STATE_LABEL[p.connectionState] + ' · ' + ago(p.lastSeen) + '</span>';
+      const marker = L.marker([p.lat, p.lng], { icon }).addTo(map).bindPopup(popupHtml);
+      markersRef.current.push(marker);
+    });
+
+    // Auto-fit a los markers (solo si hay al menos uno)
+    if (fleet.length > 0) {
+      const bounds = L.latLngBounds(fleet.map((p) => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+    }
+  }, [fleet, mapReady]);
 
   return (
     <>
@@ -421,14 +501,21 @@ export default function DashboardClient({
         <div className="col-7 col-stack">
           <div className="admin-card map-card">
             <div className="card-header map-header">
-              <h2>🗺️ Mapa de la flota — Mendoza</h2>
-              <span className="map-meta map-meta-live"><span className="live-dot" /> Datos en vivo</span>
+              <h2>🗺️ Mapa de la flota</h2>
+              <span className="map-meta map-meta-live">
+                <span className="live-dot" />
+                {fleetError
+                  ? "error refrescando"
+                  : fleet.length === 0
+                    ? "sin posiciones en 24h"
+                    : `${fleet.length} repartidor${fleet.length === 1 ? "" : "es"} · refresco 10s`}
+              </span>
             </div>
             <div ref={mapContainerRef} className="fleet-map" />
             <ul className="map-legend">
-              <li><span className="legend-dot ok" /> En ruta</li>
-              <li><span className="legend-dot warn" /> Detenido</li>
-              <li><span className="legend-dot off" /> Fuera de servicio</li>
+              <li><span className="legend-dot ok" /> En línea (&lt;5 min)</li>
+              <li><span className="legend-dot warn" /> Activo hoy (&lt;24 h)</li>
+              <li><span className="legend-dot off" /> Desconectado</li>
             </ul>
           </div>
 

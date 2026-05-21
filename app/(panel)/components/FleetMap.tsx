@@ -144,7 +144,14 @@ export default function FleetMap({
         setMapReady(false);
       }
     };
-  }, [defaultCenter, defaultZoom]);
+    // Deps vacíos a propósito: el init del mapa corre UNA sola vez.
+    // defaultCenter/defaultZoom son props con default value (array literal)
+    // que cambian de referencia en cada render del padre → si los pongo en
+    // deps, este useEffect re-corría en cada poll de fleet y destruía + creaba
+    // el mapa, reseteando el zoom del usuario. Los valores se leen del closure
+    // del primer render, que es lo que queremos para "valores iniciales".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Sync markers
   useEffect(() => {

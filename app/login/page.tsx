@@ -1,4 +1,13 @@
-export default function LoginPage() {
+export const dynamic = "force-dynamic";
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ msg?: string }>;
+}) {
+  const { msg } = await searchParams;
+  const showUseAppNotice = msg === "use-app";
+
   return (
     <main className="login-root">
       <div className="login-card">
@@ -7,6 +16,12 @@ export default function LoginPage() {
           <h1>CogniPilot</h1>
           <p>Panel de supervisión</p>
         </div>
+
+        {showUseAppNotice && (
+          <div className="feedback warning" role="alert" style={{ marginBottom: "1rem" }}>
+            Los repartidores trabajan desde la app Android. Usá tus credenciales ahí; este panel es para roles de supervisión.
+          </div>
+        )}
 
         <form id="login-form" className="login-form">
           <div className="field-group">
@@ -62,7 +77,8 @@ export default function LoginPage() {
               });
 
               if (res.ok) {
-                window.location.href = '/admin';
+                // El proxy se encargará de mandar a la home-por-rol al pegarle a /.
+                window.location.href = '/';
               } else {
                 const data = await res.json().catch(() => ({}));
                 errEl.textContent = data.error ?? 'Credenciales incorrectas';

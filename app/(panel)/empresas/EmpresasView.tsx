@@ -61,7 +61,6 @@ export default function EmpresasView({ initial }: { initial: Empresa[] }) {
         flash("error", data.error ?? "Error al crear empresa");
         return;
       }
-      // Re-fetch lista para incluir _count
       const list = await fetch("/api/empresas", { cache: "no-store" });
       const json = await list.json();
       setEmpresas(json.empresas.map(serialize));

@@ -1,5 +1,5 @@
 import { serverFetch } from "@/lib/api";
-import { getAuthUser } from "@/lib/auth";
+import { requireRole } from "@/lib/dal";
 import UsuariosView from "./UsuariosView";
 
 interface UsuarioFromBack {
@@ -11,7 +11,7 @@ interface UsuarioFromBack {
   empresaNombre: string | null;
   activo: boolean;
   dispositivos: number;
-  createdAt: number;  // ms epoch (FastAPI ya lo devuelve así)
+  createdAt: number;
 }
 
 interface EmpresaShort {
@@ -22,30 +22,10 @@ interface EmpresaShort {
 export const dynamic = "force-dynamic";
 
 export default async function UsuariosPage() {
-  const user = await getAuthUser();
-  if (user?.rol !== "admin_sistema" && user?.rol !== "supervisor") {
-    return (
-      <>
-        <div className="page-header">
-          <div>
-            <h2>Usuarios</h2>
-            <div className="page-subtitle">Acceso restringido</div>
-          </div>
-        </div>
-        <div className="admin-card">
-          <p style={{ color: "var(--text-faint)", padding: "2rem 0", textAlign: "center" }}>
-            Esta sección es exclusiva del administrador y supervisores.
-          </p>
-        </div>
-      </>
-    );
-  }
+  const user = await requireRole("admin_sistema", "supervisor");
 
-  // El back filtra por rol del que llama: supervisor ve solo su empresa, admin ve todos.
   const usuariosData = await serverFetch<{ usuarios: UsuarioFromBack[] }>("/api/usuarios");
 
-  // Empresas para el dropdown — admin ve todas, supervisor solo necesita la propia
-  // pero por consistencia siempre traemos la lista; el endpoint la filtra por rol.
   let empresas: EmpresaShort[] = [];
   if (user.rol === "admin_sistema") {
     const e = await serverFetch<{ empresas: Array<EmpresaShort & { activa: boolean }> }>(

@@ -2,24 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { navItemsForRole, type Rol } from "@/lib/nav";
 
-interface NavItem {
-  href: string;
-  label: string;
-  icon: string;
-  disabled?: boolean;
-}
-
-const items: NavItem[] = [
-  { href: "/admin",           label: "Dashboard", icon: "▦" },
-  { href: "/admin/empresas",  label: "Empresas",  icon: "◐" },
-  { href: "/admin/usuarios",  label: "Usuarios",  icon: "○" },
-  { href: "/admin/reglas",    label: "Reglas",    icon: "⚙", disabled: true },
-  { href: "/admin/reportes",  label: "Reportes",  icon: "▤", disabled: true },
-];
-
-export default function Sidebar() {
+export default function Sidebar({ rol }: { rol: Rol }) {
   const pathname = usePathname();
+  const items = navItemsForRole(rol);
 
   return (
     <aside className="admin-sidebar">

@@ -1,4 +1,8 @@
-export default function ReglasPage() {
+import { requireRole } from "@/lib/dal";
+
+export default async function ReglasPage() {
+  await requireRole("admin_sistema", "supervisor");
+
   return (
     <>
       <div className="page-header">

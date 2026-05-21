@@ -1,4 +1,8 @@
-export default function ReportesPage() {
+import { requireRole } from "@/lib/dal";
+
+export default async function ReportesPage() {
+  await requireRole("admin_sistema", "gerente");
+
   return (
     <>
       <div className="page-header">

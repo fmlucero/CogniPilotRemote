@@ -4,7 +4,7 @@ import DashboardClient, { type ScheduleFromBack } from "./DashboardClient";
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  // Auth ya validada en layout
+  // Auth ya validada en proxy + layout
 
   let schedule: ScheduleFromBack | null = null;
   try {

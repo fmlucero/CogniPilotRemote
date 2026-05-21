@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { formatCuitProgressive } from "@/lib/cuit";
 
@@ -224,7 +225,11 @@ export default function EmpresasView({ initial }: { initial: Empresa[] }) {
               <tbody>
                 {empresas.map((e) => (
                   <tr key={e.id}>
-                    <td><strong>{e.nombre}</strong></td>
+                    <td>
+                      <Link href={`/empresas/${e.id}`} className="row-link">
+                        <strong>{e.nombre}</strong>
+                      </Link>
+                    </td>
                     <td className="mono">{e.cuit}</td>
                     <td className="muted">
                       {e.contacto?.email || e.contacto?.telefono || "—"}

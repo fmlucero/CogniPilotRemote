@@ -41,6 +41,12 @@ interface FeedEvent {
   appPackage?: string;
   keywords?: string[];
   screenText?: string[];
+  // HU-29: identidad del autor del evento (puede faltar en eventos históricos)
+  usuarioId?: string | null;
+  usuarioEmail?: string | null;
+  usuarioNombre?: string | null;
+  empresaId?: string | null;
+  empresaNombre?: string | null;
 }
 
 const SCAN_ALERT_WINDOW_MS = 30_000;
@@ -167,6 +173,12 @@ export default function DashboardClient({
       const recent = eventBuffer.slice(-FEED_LIMIT).reverse();
       feed.innerHTML = recent.map((e) => {
         const meta = LABELS[e.type] || { icon: "•", text: e.type, cls: "" };
+        const who = e.usuarioNombre
+          ? (e.empresaNombre ? e.usuarioNombre + " · " + e.empresaNombre : e.usuarioNombre)
+          : "anónimo";
+        const whoHtml =
+          '<span class="event-user" style="display:block;font-size:.72rem;color:#8c8c92;margin-bottom:2px">👤 '
+          + escapeHtml(who) + '</span>';
         const detail: string[] = [];
         if (e.appPackage) detail.push(escapeHtml(e.appPackage));
         if (e.screenName) detail.push(escapeHtml(e.screenName));
@@ -179,6 +191,7 @@ export default function DashboardClient({
         return '<li class="event-row ' + meta.cls + '">'
           + '<span class="event-icon">' + meta.icon + "</span>"
           + '<div class="event-body">'
+            + whoHtml
             + '<span class="event-title">' + meta.text + "</span>"
             + detailHtml + textsHtml
           + "</div>"

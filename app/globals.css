@@ -265,6 +265,14 @@ body { font-size: 16.5px; line-height: 1.45; }
   letter-spacing: 0.02em;
 }
 .user-badge small { color: var(--text-faint); letter-spacing: 0.06em; text-transform: uppercase; margin-left: 0.3rem; }
+.user-badge-link {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.user-badge-link:hover { border-color: var(--accent); color: var(--accent); }
+.user-badge-link:hover small { color: var(--accent); }
 
 .admin-content {
   padding: 1.75rem 2rem 2.5rem;

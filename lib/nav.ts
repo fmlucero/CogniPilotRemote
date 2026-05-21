@@ -11,6 +11,10 @@ export interface NavItem {
   icon: string;
   roles: Rol[];
   disabled?: boolean;
+  /** Si true, está permitido por el proxy pero NO se renderea en el sidebar.
+   *  Útil para rutas a las que se accede desde otros lugares (ej. /perfil
+   *  vía el badge del topbar, /usuarios/[id] vía un row del listado). */
+  hidden?: boolean;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -19,6 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/usuarios",  label: "Usuarios",  icon: "○", roles: ["admin_sistema", "supervisor"] },
   { href: "/reglas",    label: "Reglas",    icon: "⚙", roles: ["admin_sistema", "supervisor"], disabled: true },
   { href: "/reportes",  label: "Reportes",  icon: "▤", roles: ["admin_sistema", "gerente"],    disabled: true },
+  { href: "/perfil",    label: "Mi perfil", icon: "👤", roles: ["admin_sistema", "supervisor", "gerente"], hidden: true },
 ];
 
 export function homeForRole(rol: Rol): string {
@@ -33,5 +38,5 @@ export function isAllowed(rol: Rol, path: string): boolean {
 }
 
 export function navItemsForRole(rol: Rol): NavItem[] {
-  return NAV_ITEMS.filter((i) => i.roles.includes(rol));
+  return NAV_ITEMS.filter((i) => i.roles.includes(rol) && !i.hidden);
 }

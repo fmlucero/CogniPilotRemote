@@ -18,19 +18,20 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard",  label: "Dashboard", icon: "▦", roles: ["admin_sistema", "gerente"] },
+  { href: "/dashboard",  label: "Dashboard", icon: "▦", roles: ["admin_sistema"] },
   { href: "/supervisor", label: "Mi home",   icon: "★", roles: ["supervisor"] },
+  { href: "/gerente",    label: "Mi home",   icon: "★", roles: ["gerente"] },
   { href: "/empresas",   label: "Empresas",  icon: "◐", roles: ["admin_sistema"] },
   { href: "/usuarios",   label: "Usuarios",  icon: "○", roles: ["admin_sistema", "supervisor"] },
   { href: "/reglas",     label: "Reglas",    icon: "⚙", roles: ["admin_sistema", "supervisor"], disabled: true },
   { href: "/metricas",   label: "Métricas",  icon: "📊", roles: ["admin_sistema"] },
-  { href: "/reportes",   label: "Reportes",  icon: "▤", roles: ["admin_sistema", "gerente"],    disabled: true },
   { href: "/perfil",     label: "Mi perfil", icon: "👤", roles: ["admin_sistema", "supervisor", "gerente"], hidden: true },
 ];
 
 export function homeForRole(rol: Rol): string {
   if (rol === "repartidor") return "/login";
   if (rol === "supervisor") return "/supervisor";
+  if (rol === "gerente") return "/gerente";
   return "/dashboard";
 }
 

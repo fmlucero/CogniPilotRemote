@@ -1,6 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import {
+  CONNECTION_LABEL,
+  CONNECTION_PILL,
+  lastSeenLabel,
+  type ConnectionState,
+} from "./connection";
 
 type Rol = "admin_sistema" | "supervisor" | "gerente" | "repartidor";
 
@@ -13,6 +20,8 @@ interface Usuario {
   empresaNombre: string | null;
   activo: boolean;
   dispositivos: number;
+  connectionState: ConnectionState;
+  lastSeen: number | null;
   createdAt: number;
 }
 
@@ -343,7 +352,8 @@ export default function UsuariosView({
                   <th>Email</th>
                   <th>Rol</th>
                   <th>Empresa</th>
-                  <th>Dispositivos</th>
+                  <th>Disp.</th>
+                  <th>Conexión</th>
                   <th>Estado</th>
                   <th className="col-actions">Acciones</th>
                 </tr>
@@ -351,13 +361,25 @@ export default function UsuariosView({
               <tbody>
                 {usuarios.map((u) => (
                   <tr key={u.id}>
-                    <td><strong>{u.nombre}</strong></td>
+                    <td>
+                      <Link href={`/usuarios/${u.id}`} className="row-link">
+                        <strong>{u.nombre}</strong>
+                      </Link>
+                    </td>
                     <td className="mono">{u.email}</td>
                     <td>
                       <span className={`pill ${ROL_PILL[u.rol]}`}>{ROL_LABEL[u.rol]}</span>
                     </td>
                     <td className="muted">{u.empresaNombre ?? "—"}</td>
                     <td>{u.dispositivos}</td>
+                    <td>
+                      <span
+                        className={`pill ${CONNECTION_PILL[u.connectionState]}`}
+                        title={lastSeenLabel(u.lastSeen)}
+                      >
+                        {CONNECTION_LABEL[u.connectionState]}
+                      </span>
+                    </td>
                     <td>
                       <span className={`pill ${u.activo ? "pill-on" : "pill-off"}`}>
                         {u.activo ? "Activo" : "Inactivo"}

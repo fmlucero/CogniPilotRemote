@@ -11,6 +11,8 @@ interface UsuarioFromBack {
   empresaNombre: string | null;
   activo: boolean;
   dispositivos: number;
+  connectionState: "online" | "active_today" | "offline";
+  lastSeen: number | null;
   createdAt: number;
 }
 

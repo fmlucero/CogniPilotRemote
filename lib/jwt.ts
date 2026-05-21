@@ -9,6 +9,9 @@ export interface AccessPayload {
   email: string;
   rol: "admin_sistema" | "supervisor" | "gerente" | "repartidor";
   empresaId: string | null;
+  // HU-34: id del admin original cuando el access token es de una sesión
+  // de impersonación. Ausente o null en sesiones normales.
+  impersonated_by?: string | null;
 }
 
 function getAccessSecret(): string {

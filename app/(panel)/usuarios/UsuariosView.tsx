@@ -163,6 +163,31 @@ export default function UsuariosView({
     }
   }
 
+  // HU-34 — Impersonar al usuario y redirigir a su home.
+  async function impersonate(u: Usuario) {
+    if (!confirm(`Vas a entrar como ${u.nombre} (${u.rol}). Vas a ver el sistema como esa persona hasta que cliquees "Volver a mi cuenta" en el banner amarillo. ¿Seguir?`)) return;
+    setBusyId(u.id);
+    try {
+      const res = await fetch(`/api/auth/impersonate/${u.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as { detail?: string }));
+        flash("error", "No se pudo impersonar: " + (body.detail ?? `HTTP ${res.status}`));
+        return;
+      }
+      const data: { user: { rol: Rol } } = await res.json();
+      // Redirigir a la home del rol target — la cookie cp_at ya fue reemplazada por el back.
+      const home = data.user.rol === "supervisor" ? "/supervisor" : "/gerente";
+      window.location.href = home;
+    } catch (err) {
+      flash("error", "Error de red: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <>
       <div className="page-header">
@@ -394,6 +419,17 @@ export default function UsuariosView({
                       >
                         🔑 Reset
                       </button>
+                      {isAdmin && u.activo && (u.rol === "supervisor" || u.rol === "gerente") && (
+                        <button
+                          className="btn-sm"
+                          style={{ marginLeft: "0.4rem" }}
+                          onClick={() => impersonate(u)}
+                          disabled={busyId === u.id}
+                          title="Ver el sistema como esta persona (HU-34)"
+                        >
+                          🎭 Impersonar
+                        </button>
+                      )}
                       <button
                         className={`btn-sm ${u.activo ? "btn-danger" : ""}`}
                         style={{ marginLeft: "0.4rem" }}

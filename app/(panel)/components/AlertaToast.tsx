@@ -21,6 +21,11 @@ interface AlertaPayload {
   repartidor_email?: string;
   errores_hoy?: number;
   umbral?: number;
+  // HU-15 — campos solo en alertas tipo anomalia_estadistica
+  mean?: number;
+  stddev?: number;
+  threshold?: number;
+  jornadas_consideradas?: number;
   lat?: number | null;
   lng?: number | null;
   ts?: number;
@@ -93,12 +98,19 @@ export default function AlertaToast({ rol }: { rol: string }) {
     >
       {items.map((t) => {
         const p = t.payload;
-        const headline = p.tipo === "umbral_errores"
-          ? `🚨 ${p.repartidor_nombre ?? "Repartidor"} superó el umbral`
-          : `🚨 Alerta: ${p.tipo}`;
-        const detail = p.tipo === "umbral_errores" && p.errores_hoy !== undefined
-          ? `${p.errores_hoy} errores (umbral: ${p.umbral})`
-          : null;
+        let headline: string;
+        let detail: string | null = null;
+        if (p.tipo === "umbral_errores") {
+          headline = `🚨 ${p.repartidor_nombre ?? "Repartidor"} superó el umbral`;
+          if (p.errores_hoy !== undefined) detail = `${p.errores_hoy} errores (umbral: ${p.umbral})`;
+        } else if (p.tipo === "anomalia_estadistica") {
+          headline = `📈 Anomalía: ${p.repartidor_nombre ?? "Repartidor"}`;
+          if (p.errores_hoy !== undefined && p.mean !== undefined) {
+            detail = `${p.errores_hoy} errores hoy vs media ${p.mean}±${p.stddev} (${p.jornadas_consideradas} jornadas)`;
+          }
+        } else {
+          headline = `🚨 Alerta: ${p.tipo}`;
+        }
         return (
           <div
             key={t.id}

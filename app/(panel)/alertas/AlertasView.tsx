@@ -38,6 +38,7 @@ function fmtDate(ms: number): string {
 
 const TIPO_LABEL: Record<string, string> = {
   umbral_errores: "Umbral de errores",
+  anomalia_estadistica: "Anomalía estadística",
 };
 
 export default function AlertasView({ viewerRol }: { viewerRol: Rol }) {
@@ -188,6 +189,8 @@ export default function AlertasView({ viewerRol }: { viewerRol: Rol }) {
                       <td className="muted">
                         {a.tipo === "umbral_errores" && p.errores_hoy !== undefined
                           ? `${p.errores_hoy} errores (umbral: ${p.umbral})`
+                          : a.tipo === "anomalia_estadistica" && p.errores_hoy !== undefined
+                          ? `${p.errores_hoy} errores hoy · media histórica ${(p as Record<string, unknown>).mean} ± ${(p as Record<string, unknown>).stddev} (${(p as Record<string, unknown>).jornadas_consideradas} jornadas)`
                           : JSON.stringify(p)}
                       </td>
                       <td>

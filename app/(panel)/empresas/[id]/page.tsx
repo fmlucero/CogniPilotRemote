@@ -11,6 +11,7 @@ import {
   lastSeenLabel,
   type ConnectionState,
 } from "../../usuarios/connection";
+import UmbralEditor from "./UmbralEditor";
 
 type Rol = "admin_sistema" | "supervisor" | "gerente" | "repartidor";
 
@@ -135,6 +136,9 @@ export default async function EmpresaDetailPage({
         </div>
         <Link href="/empresas" style={{ color: "var(--accent)", fontSize: ".88rem", alignSelf: "flex-start" }}>← Volver a empresas</Link>
       </div>
+
+      {/* HU-12 — Umbral de alertas */}
+      <UmbralEditor empresaId={empresa.id} />
 
       {/* KPI cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
@@ -54,38 +56,11 @@ export default async function LoginPage({
           </button>
 
           <div style={{ marginTop: "1rem", textAlign: "center", fontSize: ".85rem" }}>
-            <a
-              href="#"
-              id="forgot-link"
-              style={{ color: "var(--accent)", textDecoration: "none" }}
-            >
+            <Link href="/recuperar" style={{ color: "var(--accent)", textDecoration: "none" }}>
               ¿Olvidaste tu contraseña?
-            </a>
+            </Link>
           </div>
         </form>
-
-        {/* HU-25 — Modal inline para solicitar reset (oculto por default). */}
-        <div id="forgot-modal" className="hidden" style={{ marginTop: "1rem" }}>
-          <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "1rem 0" }} />
-          <p style={{ fontSize: ".88rem", marginBottom: ".5rem" }}>
-            Ingresá tu email. Un administrador va a contactarte para resetear tu contraseña.
-          </p>
-          <form id="forgot-form">
-            <div className="field-group">
-              <label htmlFor="forgot-email">Email</label>
-              <input id="forgot-email" name="email" type="email" required placeholder="tu@email.com" />
-            </div>
-            <div id="forgot-feedback" className="hidden" role="alert" style={{ marginBottom: ".5rem" }}></div>
-            <div style={{ display: "flex", gap: ".5rem" }}>
-              <button type="button" id="forgot-cancel" className="btn-secondary" style={{ flex: 1 }}>
-                Cancelar
-              </button>
-              <button id="forgot-submit" type="submit" className="btn-primary" style={{ flex: 1 }}>
-                Solicitar
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
 
       <script
@@ -124,43 +99,6 @@ export default async function LoginPage({
               errEl.classList.remove('hidden');
               btn.disabled = false;
               btn.textContent = 'Entrar';
-            }
-          });
-
-          // HU-25 — Toggle del modal de reset
-          document.getElementById('forgot-link').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('forgot-modal').classList.toggle('hidden');
-          });
-          document.getElementById('forgot-cancel').addEventListener('click', () => {
-            document.getElementById('forgot-modal').classList.add('hidden');
-          });
-          document.getElementById('forgot-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('forgot-submit');
-            const fb = document.getElementById('forgot-feedback');
-            const email = document.getElementById('forgot-email').value;
-            btn.disabled = true;
-            btn.textContent = 'Enviando…';
-            fb.classList.add('hidden');
-            try {
-              const res = await fetch('/api/auth/reset-request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-              });
-              const data = await res.json().catch(() => ({}));
-              fb.textContent = data.message || 'Solicitud registrada. Un admin va a contactarte.';
-              fb.className = 'feedback success';
-              fb.classList.remove('hidden');
-              document.getElementById('forgot-email').value = '';
-            } catch (err) {
-              fb.textContent = 'Error de red: ' + err.message;
-              fb.className = 'feedback error';
-              fb.classList.remove('hidden');
-            } finally {
-              btn.disabled = false;
-              btn.textContent = 'Solicitar';
             }
           });
         `,

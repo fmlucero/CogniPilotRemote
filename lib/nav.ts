@@ -44,7 +44,7 @@ export function homeForRole(rol: Rol): string {
 }
 
 export function isAllowed(rol: Rol, path: string): boolean {
-  if (path === "/" || path === "/login") return true;
+  if (path === "/" || path === "/login" || path === "/recuperar") return true;
   const item = NAV_ITEMS.find((i) => path === i.href || path.startsWith(i.href + "/"));
   return item ? item.roles.includes(rol) : false;
 }

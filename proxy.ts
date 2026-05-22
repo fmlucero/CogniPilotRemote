@@ -45,6 +45,11 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // HU-25 — página pública de reset, no requiere auth.
+  if (path === "/recuperar") {
+    return NextResponse.next();
+  }
+
   if (!user) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }

@@ -4,6 +4,7 @@ import Sidebar from "./components/Sidebar";
 import LogoutButton from "./components/LogoutButton";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 import AlertasBanner from "./components/AlertasBanner";
+import AlertaToast from "./components/AlertaToast";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -16,6 +17,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
       <div className="admin-main">
         {isImpersonation && <ImpersonationBanner targetLabel={user.email} />}
         <AlertasBanner rol={user.rol} />
+        <AlertaToast rol={user.rol} />
         <header className="admin-topbar">
           <div className="topbar-title">
             <small>Panel</small>

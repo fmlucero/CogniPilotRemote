@@ -1,21 +1,36 @@
+// HU-04 — CRUD de reglas para admin/supervisor.
+
+import { serverFetch } from "@/lib/api";
 import { requireRole } from "@/lib/dal";
+import ReglasView, { type Regla, type EmpresaOption } from "./ReglasView";
+
+export const dynamic = "force-dynamic";
+
+interface EmpresaFromBack {
+  id: string;
+  nombre: string;
+}
 
 export default async function ReglasPage() {
-  await requireRole("admin_sistema", "supervisor");
+  const me = await requireRole("admin_sistema", "supervisor");
+
+  const reglasData = await serverFetch<{ reglas: Regla[] }>("/api/reglas");
+
+  // Admin necesita la lista de empresas para el dropdown del form de creación.
+  let empresas: EmpresaOption[] = [];
+  if (me.rol === "admin_sistema") {
+    const empresasData = await serverFetch<{ empresas: EmpresaFromBack[] }>("/api/empresas");
+    empresas = empresasData.empresas.map((e) => ({ id: e.id, nombre: e.nombre }));
+  } else if (me.empresaId) {
+    empresas = [{ id: me.empresaId, nombre: "(tu empresa)" }];
+  }
 
   return (
-    <>
-      <div className="page-header">
-        <div>
-          <h2>Reglas</h2>
-          <div className="page-subtitle">Motor de reglas configurable (HU-04, HU-05, HU-06)</div>
-        </div>
-      </div>
-      <div className="admin-card">
-        <p style={{ color: "var(--text-faint)", padding: "2rem 0", textAlign: "center" }}>
-          Próximamente — en desarrollo (Fase 2).
-        </p>
-      </div>
-    </>
+    <ReglasView
+      initial={reglasData.reglas}
+      viewerRol={me.rol}
+      viewerEmpresaId={me.empresaId ?? null}
+      empresas={empresas}
+    />
   );
 }

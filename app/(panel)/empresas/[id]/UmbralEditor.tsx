@@ -56,9 +56,9 @@ export default function UmbralEditor({ empresaId }: { empresaId: string }) {
     }
   }
 
-  if (valor === null) return null;
-
-  const dirty = String(valor) !== draft;
+  // Renderizamos el shell aún sin valor cargado para que SSR sea consistente
+  // con el client render (evita un layout shift cuando llega el fetch).
+  const dirty = valor !== null && String(valor) !== draft;
 
   return (
     <div className="admin-card" style={{ padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
@@ -99,7 +99,7 @@ export default function UmbralEditor({ empresaId }: { empresaId: string }) {
         </button>
         {msg && <span style={{ fontSize: ".82rem", color: msg.startsWith("✅") ? "var(--success)" : "var(--error)" }}>{msg}</span>}
         <span style={{ marginLeft: "auto", fontSize: ".78rem", color: "var(--text-faint)" }}>
-          Actual: {valor} errores
+          {valor !== null ? `Actual: ${valor} errores` : "Cargando…"}
         </span>
       </div>
     </div>

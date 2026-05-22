@@ -24,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/empresas",   label: "Empresas",  icon: "◐", roles: ["admin_sistema"] },
   { href: "/usuarios",   label: "Usuarios",  icon: "○", roles: ["admin_sistema", "supervisor"] },
   { href: "/dispositivos", label: "Dispositivos", icon: "📱", roles: ["admin_sistema", "supervisor"] },
+  { href: "/jornada",    label: "Pre-jornada", icon: "🚦", roles: ["admin_sistema", "supervisor", "gerente"] },
   { href: "/incidentes", label: "Incidentes", icon: "⚠", roles: ["admin_sistema", "supervisor"] },
   { href: "/reglas",     label: "Reglas",    icon: "⚙", roles: ["admin_sistema", "supervisor"], disabled: true },
   { href: "/metricas",   label: "Métricas",  icon: "📊", roles: ["admin_sistema"] },

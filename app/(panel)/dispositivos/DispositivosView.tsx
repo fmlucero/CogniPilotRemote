@@ -11,6 +11,8 @@ import {
   type ConnectionState,
 } from "../usuarios/connection";
 
+export type PreflightStatus = "ready" | "not_ready" | "unknown";
+
 export interface DispositivoRow {
   id: string;
   deviceUuid: string;
@@ -29,6 +31,10 @@ export interface DispositivoRow {
   usuarioRol: "admin_sistema" | "supervisor" | "gerente" | "repartidor";
   empresaId: string | null;
   empresaNombre: string | null;
+  // HU-43
+  capabilities: Record<string, boolean> | null;
+  capabilitiesUpdatedAt: number | null;
+  preflightStatus: PreflightStatus;
 }
 
 type Rol = "admin_sistema" | "supervisor" | "gerente" | "repartidor";

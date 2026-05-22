@@ -100,6 +100,9 @@ export default function ReglasView({
   const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
   const [history, setHistory] = useState<HistorialEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  // HU-06 — filtros de rango de fechas para el historial.
+  const [historyFrom, setHistoryFrom] = useState<string>("");
+  const [historyTo, setHistoryTo] = useState<string>("");
 
   // Default empresa pre-cargada para supervisor
   useEffect(() => {
@@ -230,15 +233,14 @@ export default function ReglasView({
     }
   }
 
-  async function openHistory(reglaId: string) {
-    if (historyOpenId === reglaId) {
-      setHistoryOpenId(null);
-      return;
-    }
-    setHistoryOpenId(reglaId);
+  async function loadHistory(reglaId: string, from: string, to: string) {
     setHistoryLoading(true);
     try {
-      const res = await fetch(`/api/reglas/${reglaId}/historial`, { cache: "no-store" });
+      const qs = new URLSearchParams();
+      if (from) qs.set("from", new Date(from).getTime().toString());
+      if (to) qs.set("to", new Date(to).getTime().toString());
+      const url = `/api/reglas/${reglaId}/historial` + (qs.toString() ? `?${qs}` : "");
+      const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data: { historial: HistorialEntry[] } = await res.json();
       setHistory(data.historial);
@@ -247,6 +249,17 @@ export default function ReglasView({
     } finally {
       setHistoryLoading(false);
     }
+  }
+
+  async function openHistory(reglaId: string) {
+    if (historyOpenId === reglaId) {
+      setHistoryOpenId(null);
+      return;
+    }
+    setHistoryOpenId(reglaId);
+    setHistoryFrom("");
+    setHistoryTo("");
+    await loadHistory(reglaId, "", "");
   }
 
   const showEmpresaColumn = viewerRol === "admin_sistema";
@@ -450,11 +463,41 @@ export default function ReglasView({
                       <tr>
                         <td colSpan={showEmpresaColumn ? 9 : 8} style={{ background: "var(--bg-elev)" }}>
                           <div style={{ padding: ".75rem" }}>
-                            <strong style={{ fontSize: ".85rem", display: "block", marginBottom: ".5rem" }}>Historial de cambios</strong>
+                            <div style={{ display: "flex", gap: ".75rem", alignItems: "center", marginBottom: ".5rem", flexWrap: "wrap" }}>
+                              <strong style={{ fontSize: ".85rem" }}>Historial de cambios</strong>
+                              <span style={{ fontSize: ".78rem", color: "var(--text-muted)" }}>Desde:</span>
+                              <input
+                                type="date"
+                                value={historyFrom}
+                                onChange={(e) => {
+                                  setHistoryFrom(e.target.value);
+                                  loadHistory(r.id, e.target.value, historyTo);
+                                }}
+                                style={{ padding: ".2rem .4rem", fontSize: ".8rem", background: "var(--bg-elev)", border: "1px solid var(--border)", borderRadius: "4px", color: "var(--text)" }}
+                              />
+                              <span style={{ fontSize: ".78rem", color: "var(--text-muted)" }}>Hasta:</span>
+                              <input
+                                type="date"
+                                value={historyTo}
+                                onChange={(e) => {
+                                  setHistoryTo(e.target.value);
+                                  loadHistory(r.id, historyFrom, e.target.value);
+                                }}
+                                style={{ padding: ".2rem .4rem", fontSize: ".8rem", background: "var(--bg-elev)", border: "1px solid var(--border)", borderRadius: "4px", color: "var(--text)" }}
+                              />
+                              {(historyFrom || historyTo) && (
+                                <button
+                                  onClick={() => { setHistoryFrom(""); setHistoryTo(""); loadHistory(r.id, "", ""); }}
+                                  style={{ padding: ".2rem .5rem", fontSize: ".78rem", background: "transparent", border: "1px solid var(--border)", borderRadius: "4px", color: "var(--text-muted)", cursor: "pointer" }}
+                                >
+                                  Limpiar
+                                </button>
+                              )}
+                            </div>
                             {historyLoading ? (
                               <span className="muted">Cargando…</span>
                             ) : history.length === 0 ? (
-                              <span className="muted">Sin historial registrado todavía.</span>
+                              <span className="muted">Sin historial en el rango.</span>
                             ) : (
                               <table style={{ width: "100%", fontSize: ".82rem" }}>
                                 <thead>

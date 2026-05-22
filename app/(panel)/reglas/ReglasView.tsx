@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-export type TipoRegla = "paquete_fuera_parada" | "ventana_horaria" | "app_bloqueada_en_horario";
+export type TipoRegla = "paquete_fuera_parada" | "ventana_horaria" | "app_bloqueada_en_horario" | "geofence";
 export type AccionRegla = "bloquear" | "alertar";
 
 export interface Regla {
@@ -44,6 +44,17 @@ const TIPO_LABEL: Record<TipoRegla, string> = {
   paquete_fuera_parada: "Paquete fuera de parada",
   ventana_horaria: "Ventana horaria",
   app_bloqueada_en_horario: "App bloqueada en horario",
+  geofence: "Geofence (radio)",
+};
+
+// HU-42 — placeholder de condición sugerido según tipo. Si el usuario abre el
+// form en modo crear y cambia el tipo y el campo está vacío/default, lo
+// pre-cargamos. No pisamos lo que el usuario ya tocó.
+const CONDICION_TEMPLATE: Record<TipoRegla, string> = {
+  paquete_fuera_parada: "{}",
+  ventana_horaria: "{}",
+  app_bloqueada_en_horario: "{}",
+  geofence: JSON.stringify({ radius_m: 50, lat: -32.8895, lng: -68.8458 }, null, 2),
 };
 const ACCION_LABEL: Record<AccionRegla, string> = {
   bloquear: "Bloquear",
@@ -341,7 +352,22 @@ export default function ReglasView({
             <div style={{ fontSize: ".78rem", color: "var(--text-muted)", marginBottom: ".25rem" }}>Tipo</div>
             <select
               value={form.tipo}
-              onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoRegla })}
+              onChange={(e) => {
+                const newTipo = e.target.value as TipoRegla;
+                // En modo crear: si la condicion actual es el template del tipo
+                // anterior o está vacía, la reemplazamos por el template del
+                // nuevo tipo. En modo editar: no tocamos lo que el user tenía.
+                const isTemplate = editingId === null && (
+                  form.condicionJson.trim() === "" ||
+                  form.condicionJson.trim() === "{}" ||
+                  Object.values(CONDICION_TEMPLATE).includes(form.condicionJson)
+                );
+                setForm({
+                  ...form,
+                  tipo: newTipo,
+                  condicionJson: isTemplate ? CONDICION_TEMPLATE[newTipo] : form.condicionJson,
+                });
+              }}
               style={{ width: "100%", padding: ".4rem .5rem", background: "var(--bg-elev)", border: "1px solid var(--border)", borderRadius: "4px", color: "var(--text)" }}
             >
               {(Object.keys(TIPO_LABEL) as TipoRegla[]).map((t) => (

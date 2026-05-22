@@ -196,6 +196,7 @@ export default function DispositivosView({
                   <th>OS / App</th>
                   <th>Conexión</th>
                   <th>Última vez</th>
+                  <th>Ubicación</th>
                   <th>Estado</th>
                   <th>UUID</th>
                 </tr>
@@ -221,6 +222,21 @@ export default function DispositivosView({
                       </span>
                     </td>
                     <td className="muted">{lastSeenLabel(d.lastSeen)}</td>
+                    <td>
+                      {d.lastLat !== null && d.lastLng !== null ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${d.lastLat},${d.lastLng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`Abrir ${d.lastLat.toFixed(6)}, ${d.lastLng.toFixed(6)} en Google Maps`}
+                          style={{ color: "var(--accent)", fontSize: ".82rem", fontFamily: "var(--font-mono, monospace)" }}
+                        >
+                          {d.lastLat.toFixed(4)}, {d.lastLng.toFixed(4)} ↗
+                        </a>
+                      ) : (
+                        <span style={{ color: "var(--text-faint)", fontSize: ".82rem" }}>(sin GPS)</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`pill ${d.activo ? "pill-on" : "pill-off"}`}>
                         {d.activo ? "Activo" : "Inactivo"}

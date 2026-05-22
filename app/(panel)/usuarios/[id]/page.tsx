@@ -208,6 +208,7 @@ export default async function UsuarioDetailPage({
                   <th>Android</th>
                   <th>App</th>
                   <th>Última conexión</th>
+                  <th>Ubicación</th>
                   <th>Estado</th>
                 </tr>
               </thead>
@@ -221,6 +222,21 @@ export default async function UsuarioDetailPage({
                     <td className="muted">{d.osVersion ?? "—"}</td>
                     <td className="muted">{d.appVersion ?? "—"}</td>
                     <td title={lastSeenAbsolute(d.lastSeen)}>{lastSeenLabel(d.lastSeen)}</td>
+                    <td>
+                      {d.lastLat !== null && d.lastLng !== null ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${d.lastLat},${d.lastLng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`Abrir ${d.lastLat.toFixed(6)}, ${d.lastLng.toFixed(6)} en Google Maps`}
+                          style={{ color: "var(--accent)", fontSize: "0.82rem", fontFamily: "var(--font-mono, monospace)" }}
+                        >
+                          {d.lastLat.toFixed(4)}, {d.lastLng.toFixed(4)} ↗
+                        </a>
+                      ) : (
+                        <span className="muted" style={{ fontSize: "0.82rem" }}>(sin GPS)</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`pill ${d.activo ? "pill-on" : "pill-off"}`}>
                         {d.activo ? "Activo" : "Baja"}

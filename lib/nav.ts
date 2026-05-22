@@ -28,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/reglas",     label: "Reglas",    icon: "⚙", roles: ["admin_sistema", "supervisor"], disabled: true },
   { href: "/metricas",   label: "Métricas",  icon: "📊", roles: ["admin_sistema"] },
   { href: "/sistema",    label: "Salud",     icon: "🩺", roles: ["admin_sistema"] },
+  { href: "/auditoria",  label: "Auditoría", icon: "🔍", roles: ["admin_sistema"] },
   { href: "/perfil",     label: "Mi perfil", icon: "👤", roles: ["admin_sistema", "supervisor", "gerente"], hidden: true },
 ];
 

@@ -36,7 +36,7 @@ const SUBSECTIONS: SubSection[] = [
     icon: "📡",
     title: "Peticiones HTTP",
     description: "Últimas 100 peticiones recibidas por el back-api con método, path, status, latencia y origen. Auditoría en vivo.",
-    status: "pending",
+    status: "available",
   },
   {
     href: "/sistema/worker",

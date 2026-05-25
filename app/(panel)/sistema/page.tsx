@@ -43,7 +43,7 @@ const SUBSECTIONS: SubSection[] = [
     icon: "⚙",
     title: "Worker async",
     description: "Estado del worker arq: jobs ejecutados, pendientes, fallidos, último resultado. Útil para diagnosticar tareas asíncronas.",
-    status: "pending",
+    status: "available",
   },
   {
     href: "/sistema/version",

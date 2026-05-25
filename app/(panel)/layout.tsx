@@ -5,6 +5,7 @@ import LogoutButton from "./components/LogoutButton";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 import AlertasBanner from "./components/AlertasBanner";
 import AlertaToast from "./components/AlertaToast";
+import BuildFooter from "./components/BuildFooter";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
@@ -35,6 +36,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
         <div className="admin-content">
           {children}
         </div>
+        <BuildFooter />
       </div>
     </div>
   );

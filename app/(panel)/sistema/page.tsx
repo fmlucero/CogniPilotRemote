@@ -50,7 +50,7 @@ const SUBSECTIONS: SubSection[] = [
     icon: "🏷",
     title: "Versión y build",
     description: "Commit del último deploy, branch, build time y versiones de runtime (Python, Postgres, Redis) — qué hay en producción.",
-    status: "pending",
+    status: "available",
   },
 ];
 

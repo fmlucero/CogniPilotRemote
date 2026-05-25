@@ -29,7 +29,7 @@ const SUBSECTIONS: SubSection[] = [
     icon: "🕸",
     title: "Red y topología",
     description: "Diagrama del flujo de peticiones (Cloudflare → nginx → app/back-api → postgres/redis) con IPs, puertos y networks.",
-    status: "pending",
+    status: "available",
   },
   {
     href: "/sistema/peticiones",

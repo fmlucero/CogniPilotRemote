@@ -5,7 +5,7 @@
 // El mapa para ubicar las paradas llega en HU-51; por ahora lat/lng son inputs
 // numéricos con default en Mendoza.
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 type Rol = "admin_sistema" | "supervisor" | "gerente" | "repartidor";
 
@@ -23,6 +23,22 @@ export interface RutaListItem {
   paradasCount: number;
   paquetesCount: number;
   asignacionesCount: number;
+}
+
+interface AsignacionRow {
+  id: string;
+  rutaId: string;
+  rutaNombre: string;
+  empresaId: string;
+  repartidorId: string;
+  repartidorNombre: string;
+  repartidorEmail: string;
+  fecha: string;
+}
+interface RepartidorOption {
+  id: string;
+  nombre: string;
+  email: string;
 }
 
 interface PaqueteDetail {
@@ -129,6 +145,16 @@ export default function RutasView({
   const [form, setForm] = useState<FormState>(() =>
     emptyForm(viewerRol !== "admin_sistema" && viewerEmpresaId ? viewerEmpresaId : ""),
   );
+
+  // HU-52 — panel de asignaciones (una ruta abierta a la vez).
+  const [asignOpenId, setAsignOpenId] = useState<string | null>(null);
+  const [asignList, setAsignList] = useState<AsignacionRow[]>([]);
+  const [repartidores, setRepartidores] = useState<RepartidorOption[]>([]);
+  const [asignLoading, setAsignLoading] = useState(false);
+  const [asignForm, setAsignForm] = useState<{ repartidorId: string; fecha: string }>({
+    repartidorId: "",
+    fecha: "",
+  });
 
   useEffect(() => {
     if (viewerRol !== "admin_sistema" && viewerEmpresaId && form.empresaId === "") {
@@ -315,7 +341,77 @@ export default function RutasView({
     }
   }
 
+  // ── HU-52 asignaciones ────────────────────────────────────────────────────
+  async function openAsign(r: RutaListItem) {
+    if (asignOpenId === r.id) {
+      setAsignOpenId(null);
+      return;
+    }
+    setAsignOpenId(r.id);
+    setAsignForm({ repartidorId: "", fecha: r.fecha });
+    setAsignLoading(true);
+    setError(null);
+    try {
+      const [aRes, rRes] = await Promise.all([
+        fetch(`/api/asignaciones?rutaId=${r.id}`, { cache: "no-store" }),
+        fetch(`/api/asignaciones/repartidores?empresaId=${r.empresaId}`, { cache: "no-store" }),
+      ]);
+      if (!aRes.ok) throw new Error("asignaciones HTTP " + aRes.status);
+      if (!rRes.ok) throw new Error("repartidores HTTP " + rRes.status);
+      const a: { asignaciones: AsignacionRow[] } = await aRes.json();
+      const rp: { repartidores: RepartidorOption[] } = await rRes.json();
+      setAsignList(a.asignaciones);
+      setRepartidores(rp.repartidores);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setAsignLoading(false);
+    }
+  }
+
+  async function addAsign(r: RutaListItem) {
+    if (!asignForm.repartidorId) return setError("Elegí un repartidor");
+    if (!asignForm.fecha) return setError("Elegí una fecha");
+    setError(null);
+    try {
+      const res = await fetch("/api/asignaciones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rutaId: r.id, repartidorId: asignForm.repartidorId, fecha: asignForm.fecha }),
+      });
+      if (!res.ok) {
+        let msg = "HTTP " + res.status;
+        try {
+          const b = await res.json();
+          if (b?.detail) msg = typeof b.detail === "string" ? b.detail : JSON.stringify(b.detail);
+        } catch {
+          /* noop */
+        }
+        throw new Error(msg);
+      }
+      const created: AsignacionRow = await res.json();
+      setAsignList((l) => [created, ...l]);
+      setAsignForm((f) => ({ ...f, repartidorId: "" }));
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  async function removeAsign(id: string) {
+    setError(null);
+    try {
+      const res = await fetch(`/api/asignaciones/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      setAsignList((l) => l.filter((a) => a.id !== id));
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   const showEmpresaColumn = viewerRol === "admin_sistema";
+  const colCount = showEmpresaColumn ? 7 : 6;
 
   return (
     <>
@@ -479,18 +575,86 @@ export default function RutasView({
               </thead>
               <tbody>
                 {list.map((r) => (
-                  <tr key={r.id}>
-                    <td><strong>{r.nombre}</strong></td>
-                    {showEmpresaColumn && <td className="muted">{r.empresaNombre ?? "—"}</td>}
-                    <td className="muted">{r.fecha}</td>
-                    <td>{r.paradasCount}</td>
-                    <td>{r.paquetesCount}</td>
-                    <td>{r.asignacionesCount}</td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button onClick={() => openEdit(r.id)} style={{ background: "transparent", color: "var(--accent)", border: "none", cursor: "pointer", fontSize: ".85rem", marginRight: ".5rem" }}>Editar</button>
-                      <button onClick={() => removeRuta(r)} style={{ background: "transparent", color: "var(--error)", border: "none", cursor: "pointer", fontSize: ".85rem" }}>Borrar</button>
-                    </td>
-                  </tr>
+                  <Fragment key={r.id}>
+                    <tr>
+                      <td><strong>{r.nombre}</strong></td>
+                      {showEmpresaColumn && <td className="muted">{r.empresaNombre ?? "—"}</td>}
+                      <td className="muted">{r.fecha}</td>
+                      <td>{r.paradasCount}</td>
+                      <td>{r.paquetesCount}</td>
+                      <td>{r.asignacionesCount}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        <button onClick={() => openEdit(r.id)} style={{ background: "transparent", color: "var(--accent)", border: "none", cursor: "pointer", fontSize: ".85rem", marginRight: ".5rem" }}>Editar</button>
+                        <button onClick={() => openAsign(r)} style={{ background: "transparent", color: "var(--text-muted)", border: "none", cursor: "pointer", fontSize: ".85rem", marginRight: ".5rem" }}>{asignOpenId === r.id ? "Cerrar" : "Asignar"}</button>
+                        <button onClick={() => removeRuta(r)} style={{ background: "transparent", color: "var(--error)", border: "none", cursor: "pointer", fontSize: ".85rem" }}>Borrar</button>
+                      </td>
+                    </tr>
+                    {asignOpenId === r.id && (
+                      <tr>
+                        <td colSpan={colCount} style={{ background: "var(--bg-elev)" }}>
+                          <div style={{ padding: ".75rem", display: "grid", gap: ".6rem" }}>
+                            <strong style={{ fontSize: ".85rem" }}>Asignaciones de "{r.nombre}"</strong>
+                            <div style={{ display: "flex", gap: ".5rem", alignItems: "center", flexWrap: "wrap" }}>
+                              <select
+                                value={asignForm.repartidorId}
+                                onChange={(e) => setAsignForm({ ...asignForm, repartidorId: e.target.value })}
+                                style={{ ...inputStyle, width: "auto", minWidth: "16rem" }}
+                              >
+                                <option value="">— Repartidor —</option>
+                                {repartidores.map((rp) => (
+                                  <option key={rp.id} value={rp.id}>{rp.nombre} ({rp.email})</option>
+                                ))}
+                              </select>
+                              <input
+                                type="date"
+                                value={asignForm.fecha}
+                                onChange={(e) => setAsignForm({ ...asignForm, fecha: e.target.value })}
+                                style={{ ...inputStyle, width: "auto" }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => addAsign(r)}
+                                style={{ padding: ".4rem .9rem", background: "var(--accent)", color: "#000", border: "none", borderRadius: "4px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600, fontSize: ".82rem" }}
+                              >
+                                Asignar
+                              </button>
+                              {repartidores.length === 0 && !asignLoading && (
+                                <span className="muted" style={{ fontSize: ".8rem" }}>No hay repartidores en esta empresa.</span>
+                              )}
+                            </div>
+                            {asignLoading ? (
+                              <span className="muted">Cargando…</span>
+                            ) : asignList.length === 0 ? (
+                              <span className="muted">Sin asignaciones todavía.</span>
+                            ) : (
+                              <table style={{ width: "100%", fontSize: ".82rem" }}>
+                                <thead>
+                                  <tr>
+                                    <th style={{ textAlign: "left" }}>Repartidor</th>
+                                    <th style={{ textAlign: "left" }}>Email</th>
+                                    <th style={{ textAlign: "left" }}>Fecha</th>
+                                    <th></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {asignList.map((a) => (
+                                    <tr key={a.id}>
+                                      <td><strong>{a.repartidorNombre}</strong></td>
+                                      <td className="muted">{a.repartidorEmail}</td>
+                                      <td className="muted">{a.fecha}</td>
+                                      <td>
+                                        <button onClick={() => removeAsign(a.id)} style={{ background: "transparent", color: "var(--error)", border: "none", cursor: "pointer", fontSize: ".85rem" }}>Quitar</button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

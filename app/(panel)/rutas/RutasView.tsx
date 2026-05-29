@@ -6,6 +6,7 @@
 // numéricos con default en Mendoza.
 
 import { Fragment, useEffect, useState } from "react";
+import ParadaMapPicker from "./ParadaMapPicker";
 
 type Rol = "admin_sistema" | "supervisor" | "gerente" | "repartidor";
 
@@ -142,6 +143,8 @@ export default function RutasView({
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // HU-51 — índice de la parada cuyo map picker está abierto (uno a la vez).
+  const [mapOpenIdx, setMapOpenIdx] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(() =>
     emptyForm(viewerRol !== "admin_sistema" && viewerEmpresaId ? viewerEmpresaId : ""),
   );
@@ -232,6 +235,7 @@ export default function RutasView({
   }
   function removeParada(i: number) {
     setForm((f) => ({ ...f, paradas: f.paradas.filter((_, idx) => idx !== i) }));
+    setMapOpenIdx(null);
   }
   function addPaquete(i: number) {
     setForm((f) => ({
@@ -524,6 +528,24 @@ export default function RutasView({
                   <input type="time" value={p.ventanaHasta} onChange={(e) => patchParada(i, { ventanaHasta: e.target.value })} style={inputStyle} />
                 </label>
               </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setMapOpenIdx(mapOpenIdx === i ? null : i)}
+                  style={{ background: "transparent", color: "var(--accent)", border: "1px solid var(--border)", borderRadius: "4px", padding: ".3rem .7rem", cursor: "pointer", fontFamily: "inherit", fontSize: ".8rem" }}
+                >
+                  {mapOpenIdx === i ? "Ocultar mapa" : "📍 Ubicar en mapa"}
+                </button>
+              </div>
+              {mapOpenIdx === i && (
+                <ParadaMapPicker
+                  lat={p.lat}
+                  lng={p.lng}
+                  onPick={(la, ln) => patchParada(i, { lat: String(la), lng: String(ln) })}
+                  onClose={() => setMapOpenIdx(null)}
+                />
+              )}
 
               {/* Paquetes de la parada */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

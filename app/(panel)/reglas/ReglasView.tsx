@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-export type TipoRegla = "paquete_fuera_parada" | "ventana_horaria" | "app_bloqueada_en_horario" | "geofence";
+export type TipoRegla = "paquete_fuera_parada" | "ventana_horaria" | "app_bloqueada_en_horario" | "geofence" | "acceso_operativo";
 export type AccionRegla = "bloquear" | "alertar";
 
 export interface Regla {
@@ -45,6 +45,7 @@ const TIPO_LABEL: Record<TipoRegla, string> = {
   ventana_horaria: "Ventana horaria",
   app_bloqueada_en_horario: "App bloqueada en horario",
   geofence: "Geofence (radio)",
+  acceso_operativo: "Acceso operativo (geo/horario)",
 };
 
 // HU-42 — placeholder de condición sugerido según tipo. Si el usuario abre el
@@ -55,6 +56,12 @@ const CONDICION_TEMPLATE: Record<TipoRegla, string> = {
   ventana_horaria: "{}",
   app_bloqueada_en_horario: "{}",
   geofence: JSON.stringify({ radius_m: 50, lat: -32.8895, lng: -68.8458 }, null, 2),
+  // HU-53 — acceso operativo: geo y/o horario + modo (app_trabajo | kiosko).
+  acceso_operativo: JSON.stringify(
+    { modo: "app_trabajo", geo: { lat: -32.8895, lng: -68.8458, radius_m: 200 }, horario: { desde: "08:00", hasta: "18:00" } },
+    null,
+    2,
+  ),
 };
 const ACCION_LABEL: Record<AccionRegla, string> = {
   bloquear: "Bloquear",

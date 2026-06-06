@@ -352,7 +352,10 @@ export default function RutasView({
       return;
     }
     setAsignOpenId(r.id);
-    setAsignForm({ repartidorId: "", fecha: r.fecha });
+    // La fecha de asignación es el DÍA DE TRABAJO del repartidor (lo que mira
+    // "Mi Ruta" = hoy local), no la fecha de planificación de la ruta. Default a
+    // hoy para que asignar "para hoy" sea el caso natural (ver I-26).
+    setAsignForm({ repartidorId: "", fecha: todayISO() });
     setAsignLoading(true);
     setError(null);
     try {
@@ -627,12 +630,15 @@ export default function RutasView({
                                   <option key={rp.id} value={rp.id}>{rp.nombre} ({rp.email})</option>
                                 ))}
                               </select>
-                              <input
-                                type="date"
-                                value={asignForm.fecha}
-                                onChange={(e) => setAsignForm({ ...asignForm, fecha: e.target.value })}
-                                style={{ ...inputStyle, width: "auto" }}
-                              />
+                              <label style={{ display: "grid", gap: ".15rem" }}>
+                                <span style={{ ...labelTextStyle, marginBottom: 0 }}>Día de trabajo</span>
+                                <input
+                                  type="date"
+                                  value={asignForm.fecha}
+                                  onChange={(e) => setAsignForm({ ...asignForm, fecha: e.target.value })}
+                                  style={{ ...inputStyle, width: "auto" }}
+                                />
+                              </label>
                               <button
                                 type="button"
                                 onClick={() => addAsign(r)}

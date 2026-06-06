@@ -15,6 +15,12 @@ export interface EmpresaOption {
   nombre: string;
 }
 
+interface AsignadoItem {
+  repartidorId: string;
+  repartidorNombre: string;
+  fecha: string; // YYYY-MM-DD
+}
+
 export interface RutaListItem {
   id: string;
   empresaId: string;
@@ -24,6 +30,7 @@ export interface RutaListItem {
   paradasCount: number;
   paquetesCount: number;
   asignacionesCount: number;
+  asignados: AsignadoItem[];
 }
 
 interface AsignacionRow {
@@ -106,6 +113,11 @@ function todayISO(): string {
   return new Date().toLocaleDateString("en-CA", {
     timeZone: "America/Argentina/Buenos_Aires",
   }); // en-CA → YYYY-MM-DD
+}
+
+// Las fechas ISO YYYY-MM-DD comparan lexicográficamente bien.
+function isVencida(fecha: string): boolean {
+  return fecha < todayISO();
 }
 
 function emptyForm(empresaId: string): FormState {
@@ -594,20 +606,40 @@ export default function RutasView({
                   <th>Fecha</th>
                   <th>Paradas</th>
                   <th>Paquetes</th>
-                  <th>Asignaciones</th>
+                  <th>Asignado a</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {list.map((r) => (
+                {list.map((r) => {
+                  const vencida = isVencida(r.fecha);
+                  const esHoy = r.fecha === todayISO();
+                  return (
                   <Fragment key={r.id}>
-                    <tr>
+                    <tr style={vencida ? { opacity: 0.5 } : undefined}>
                       <td><strong>{r.nombre}</strong></td>
                       {showEmpresaColumn && <td className="muted">{r.empresaNombre ?? "—"}</td>}
-                      <td className="muted">{r.fecha}</td>
+                      <td className="muted" style={{ whiteSpace: "nowrap" }}>
+                        {r.fecha}
+                        {esHoy && (
+                          <span style={{ marginLeft: ".4rem", padding: ".05rem .35rem", borderRadius: "4px", background: "var(--accent)", color: "#000", fontSize: ".68rem", fontWeight: 700 }}>HOY</span>
+                        )}
+                      </td>
                       <td>{r.paradasCount}</td>
                       <td>{r.paquetesCount}</td>
-                      <td>{r.asignacionesCount}</td>
+                      <td>
+                        {r.asignados.length === 0 ? (
+                          <span className="muted">—</span>
+                        ) : (
+                          <div style={{ display: "grid", gap: ".15rem" }}>
+                            {r.asignados.map((a) => (
+                              <span key={a.repartidorId + a.fecha} style={{ fontSize: ".85em" }}>
+                                {a.repartidorNombre} <span className="muted">({a.fecha})</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td style={{ whiteSpace: "nowrap" }}>
                         <button onClick={() => openEdit(r.id)} style={{ background: "transparent", color: "var(--accent)", border: "none", cursor: "pointer", fontSize: ".85rem", marginRight: ".5rem" }}>Editar</button>
                         <button onClick={() => openAsign(r)} style={{ background: "transparent", color: "var(--text-muted)", border: "none", cursor: "pointer", fontSize: ".85rem", marginRight: ".5rem" }}>{asignOpenId === r.id ? "Cerrar" : "Asignar"}</button>
@@ -683,7 +715,8 @@ export default function RutasView({
                       </tr>
                     )}
                   </Fragment>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

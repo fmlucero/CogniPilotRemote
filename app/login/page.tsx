@@ -17,7 +17,7 @@ export default async function LoginPage({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
-            alt="CogniPilot — Inteligencia en movimiento"
+            alt="CogniPilot"
             className="login-logo-img"
           />
           <p>Panel de supervisión</p>

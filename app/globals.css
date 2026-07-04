@@ -76,22 +76,12 @@ body { font-size: 16.5px; line-height: 1.45; }
 }
 
 .login-logo { text-align: center; margin-bottom: 2rem; }
-.login-logo-icon {
-  display: inline-flex;
-  width: 56px; height: 56px;
-  align-items: center; justify-content: center;
-  border-radius: 14px;
-  background: var(--accent-dim);
-  color: var(--accent);
-  font-size: 1.85rem;
-  margin-bottom: 0.6rem;
-}
-.login-logo h1 {
-  font-size: 1.9rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--text-strong);
+.login-logo-img {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  margin: 0 auto 0.75rem;
 }
 .login-logo p {
   color: var(--text-faint);
@@ -136,6 +126,11 @@ body { font-size: 16.5px; line-height: 1.45; }
   background: var(--accent-dim);
   color: var(--accent);
   font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.sidebar-brand-icon img {
+  width: 32px;
+  height: auto;
 }
 .sidebar-brand-name {
   font-weight: 700;

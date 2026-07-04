@@ -14,8 +14,12 @@ export default async function LoginPage({
     <main className="login-root">
       <div className="login-card">
         <div className="login-logo">
-          <span className="login-logo-icon">🚚</span>
-          <h1>CogniPilot</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.png"
+            alt="CogniPilot — Inteligencia en movimiento"
+            className="login-logo-img"
+          />
           <p>Panel de supervisión</p>
         </div>
 

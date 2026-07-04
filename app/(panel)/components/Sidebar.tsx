@@ -11,7 +11,10 @@ export default function Sidebar({ rol }: { rol: Rol }) {
   return (
     <aside className="admin-sidebar">
       <div className="sidebar-brand">
-        <span className="sidebar-brand-icon">🚚</span>
+        <span className="sidebar-brand-icon">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.png" alt="" />
+        </span>
         <div>
           <div className="sidebar-brand-name">CogniPilot</div>
           <div className="sidebar-brand-tag">Panel admin</div>
